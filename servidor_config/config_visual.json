@@ -1,0 +1,47 @@
+{
+  "_instrucciones": "Edita este archivo para personalizar la apariencia de la interfaz web. Los cambios se aplican al reiniciar el servidor.",
+
+  "titulo_pagina": "Agente de Traduccion Skyrim",
+  "subtitulo": "Traductor con contexto del juego usando IA local + terminologia oficial",
+
+  "tema": "Soft",
+  "color_primario": "blue",
+  "color_secundario": "slate",
+
+  "colores_personalizados": {
+    "fondo_titulo": "#1a1a2e",
+    "texto_titulo": "#e0e0e0",
+    "fondo_subtitulo": "#16213e",
+    "borde_acento": "#0f3460",
+    "fondo_boton_primary": "#2563eb",
+    "fondo_boton_secondary": "#475569",
+    "fondo_boton_stop": "#dc2626"
+  },
+
+  "fuentes": {
+    "titulo": "Segoe UI, sans-serif",
+    "cuerpo": "Segoe UI, sans-serif",
+    "codigo": "Consolas, monospace",
+    "tamano_titulo": "28px",
+    "tamano_subtitulo": "14px",
+    "tamano_cuerpo": "14px"
+  },
+
+  "layout": {
+    "centrar_titulo": true,
+    "centrar_botones": true,
+    "botones_ancho_completo": true,
+    "altura_texto_entrada": 12,
+    "altura_texto_salida": 12,
+    "altura_texto_info": 6,
+    "altura_texto_contexto": 8,
+    "mostrar_lineas": true,
+    "altura_lineas_preview": 150
+  },
+
+  "estilos_extra": {
+    "bordes_redondeados": "8px",
+    "sombra_tarjetas": "0 2px 8px rgba(0,0,0,0.3)",
+    "animacion_botones": true
+  }
+}

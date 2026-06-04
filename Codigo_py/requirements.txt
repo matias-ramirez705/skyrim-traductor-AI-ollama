@@ -1,0 +1,9 @@
+# Requisitos para el Agente de Traduccion Skyrim
+# Compatible con Python 3.11.9 y Ollama 0.30.0
+#
+# Instalar con: pip install -r requirements.txt
+# (dentro del entorno virtual activado)
+
+ollama>=0.4.0
+gradio>=5.0,<7.0
+chromadb>=1.0.0

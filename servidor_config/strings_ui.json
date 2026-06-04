@@ -1,0 +1,69 @@
+{
+  "_instrucciones": "Edita este archivo para corregir textos de la interfaz (tildes, ñ, etc). Los cambios se aplican al reiniciar el servidor.",
+
+  "titulo": "Agente de Traducci\u00f3n Skyrim",
+  "subtitulo": "Traductor con contexto del juego usando IA local + terminolog\u00eda oficial",
+
+  "tab_traducir": "Traducir",
+  "tab_prompts": "Mis Prompts",
+
+  "panel_entrada_titulo": "Texto en Ingl\u00e9s",
+  "panel_entrada_descripcion": "Pega aqu\u00ed las l\u00edneas desde ESP Translate",
+  "panel_entrada_label": "Texto Original (Ingl\u00e9s)",
+  "panel_entrada_placeholder": "Pega aqu\u00ed las l\u00edneas a traducir...\n\nEjemplo:\nWhiterun is a city in the hold of Whiterun.\nThe Stormcloaks are fighting the Imperial Legion.",
+
+  "panel_salida_titulo": "Traducci\u00f3n al Espa\u00f1ol",
+  "panel_salida_descripcion": "Copia este texto y p\u00e9galo en ESP Translate",
+  "panel_salida_label": "Texto Traducido (Espa\u00f1ol)",
+  "panel_salida_placeholder": "La traducci\u00f3n aparecer\u00e1 aqu\u00ed...",
+
+  "slider_terminos_label": "T\u00e9rminos de contexto",
+  "slider_terminos_tooltip": "Controla cu\u00e1ntos t\u00e9rminos de Skyrim se buscan en la base de datos para dar contexto a la IA. M\u00e1s t\u00e9rminos = mejor precisi\u00f3n en nombres, pero traducci\u00f3n m\u00e1s lenta. Recomendado: 30 para textos normales, 50 para textos con muchos nombres propios.",
+
+  "selector_prompt_label": "Prompt de traducci\u00f3n",
+  "selector_prompt_refrescar": "Actualizar",
+  "descripcion_prompt_label": "Descripci\u00f3n del prompt",
+
+  "btn_traducir": "Traducir",
+  "btn_limpiar": "Limpiar",
+
+  "accordion_terminos_titulo": "T\u00e9rminos encontrados",
+  "accordion_terminos_label": "T\u00e9rminos relevantes",
+  "accordion_contexto_titulo": "Contexto enviado al modelo",
+  "accordion_contexto_label": "Contexto RAG completo",
+
+  "footer_flujo": "Flujo: ESP Translate \u2192 Copiar \u2192 Pegar aqu\u00ed \u2192 Traducir \u2192 Copiar resultado \u2192 Pegar en ESP Translate",
+
+  "prompts_seccion_titulo": "Mis Prompts",
+  "prompts_seccion_descripcion": "**Gestiona tus prompts de traducci\u00f3n.** Crea prompts personalizados para diferentes tipos de texto (di\u00e1logos, libros, personajes espec\u00edficos, etc.). Los prompts se guardan autom\u00e1ticamente en `servidor_config/prompts/saved_prompts.json`.",
+  "prompts_lista_label": "Selecciona un prompt",
+  "prompts_lista_titulo": "Prompts guardados",
+  "prompts_cargar_btn": "Cargar para editar",
+  "prompts_duplicar_btn": "Duplicar",
+  "prompts_eliminar_btn": "Eliminar",
+  "prompts_nuevo_btn": "Nuevo prompt",
+  "prompts_editor_titulo": "Editor de prompt",
+  "prompts_nombre_label": "Nombre del prompt",
+  "prompts_nombre_placeholder": "Ej: Di\u00e1logo Argoniano",
+  "prompts_desc_label": "Descripci\u00f3n (para qu\u00e9 sirve)",
+  "prompts_desc_placeholder": "Ej: Traducci\u00f3n especial para di\u00e1logos de personajes Argonianos",
+  "prompts_contenido_label": "Contenido del prompt (system prompt)",
+  "prompts_contenido_placeholder": "Escribe aqu\u00ed las instrucciones que recibir\u00e1 la IA...\n\nEjemplo:\nEres un traductor experto de mods de Skyrim...\n\nREGLAS:\n1. ...\n2. ...",
+  "prompts_guardar_btn": "Guardar prompt",
+  "prompts_probar_btn": "Ir a Traducir para probar",
+  "prompts_estado_label": "Estado",
+
+  "lineas_info_prefix": "L\u00edneas: ",
+  "caracteres_info_prefix": "Caracteres: ",
+
+  "traduccion_sin_texto": "No se ingres\u00f3 texto.",
+  "prompt_no_encontrado": "Prompt no encontrado",
+  "prompt_nombre_vacio": "Escribe un nombre para el prompt",
+  "prompt_contenido_vacio": "El contenido del prompt no puede estar vac\u00edo",
+  "prompt_creado": "creado",
+  "prompt_actualizado": "actualizado",
+  "prompt_eliminado": "eliminado",
+  "prompt_no_default": "No se puede eliminar el prompt por defecto",
+  "prompt_selecciona": "Selecciona un prompt para eliminar",
+  "prompt_nuevo_msg": "Escribe el nombre, descripci\u00f3n y contenido del nuevo prompt"
+}
