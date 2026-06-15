@@ -62,6 +62,13 @@ MAX_CONTEXT_TERMS = 30
 TEMPERATURE = 0.1
 GRADIO_PORT = 7860
 
+# --- NUEVO: Tamanio de fragmento para traduccion por lotes ---
+# Cuando el texto tiene mas lineas que este valor, se divide en fragmentos
+# y cada uno se traduce por separado con el mismo contexto del glosario.
+# Menos lineas = mejor calidad (el modelo sigue el glosario), mas lento.
+# Mas lineas = mas rapido, pero puede perder terminologia.
+DEFAULT_CHUNK_SIZE = 8  # Lineas por fragmento al traducir textos largos
+
 
 # ============================================================
 # CARGAR CONFIGURACION VISUAL Y STRINGS
@@ -393,7 +400,7 @@ def translate_with_ollama(text, context, system_prompt, model=OLLAMA_MODEL, temp
         resp = ollama.chat(model=model, messages=[
             {"role": "system", "content": system_prompt},
             {"role": "user", "content": f"{context}\n\nTEXTO A TRADUCIR:\n{text}"}
-        ], options={"temperature": temperature, "num_predict": 4096})
+        ], options={"temperature": temperature, "num_predict": 8192})  # --- MODIFICADO: de 4096 a 8192 para textos largos ---
         return resp.message.content if hasattr(resp, 'message') else resp['message']['content']
     except Exception as e:
         if "connection" in str(e).lower() or "refused" in str(e).lower():
@@ -457,17 +464,50 @@ def create_interface():
     def on_output_change(t):
         return line_counter(t, S.get("lineas_info_prefix", "Líneas: "), S.get("caracteres_info_prefix", "Caracteres: "))
 
-    def do_translate(input_text, num_terms, prompt_name):
+    # --- MODIFICADO: Se agrego parametro chunk_size para traduccion por fragmentos ---
+    def do_translate(input_text, num_terms, prompt_name, chunk_size):
         if not input_text or not input_text.strip():
             return "", S.get("traduccion_sin_texto", "No se ingresó texto."), "", ""
         try:
             sp = pm.get_content(prompt_name) or DEFAULT_PROMPT["content"]
             terms = search_terms(collection, input_text, n_results=max(int(num_terms) * 3, CHROMA_SEARCH_LIMIT))
             ctx = build_context(terms)
-            trans = translate_with_ollama(input_text, ctx, sp)
+
+            # --- NUEVO: Traduccion por fragmentos (chunking) ---
+            # Si el texto tiene mas lineas que chunk_size, se divide en fragmentos
+            # y cada uno se traduce por separado con el mismo contexto del glosario.
+            # Esto evita que el modelo "olvide" las traducciones obligatorias en textos largos.
+            lines = [l for l in input_text.split('\n')]
+            chunk_sz = max(int(chunk_size), 1)
+
+            if len(lines) <= chunk_sz:
+                # Texto corto: traducir todo de una vez (comportamiento original)
+                trans = translate_with_ollama(input_text, ctx, sp)
+            else:
+                # Texto largo: dividir en fragmentos y traducir cada uno
+                chunks = []
+                for i in range(0, len(lines), chunk_sz):
+                    chunks.append('\n'.join(lines[i:i + chunk_sz]))
+
+                print(f"  [CHUNK] {len(lines)} lineas -> {len(chunks)} fragmentos de ~{chunk_sz} lineas")
+
+                translated_chunks = []
+                for idx, chunk in enumerate(chunks):
+                    print(f"  [CHUNK {idx+1}/{len(chunks)}] Traduciendo {len([l for l in chunk.split(chr(10)) if l.strip()])} lineas...")
+                    chunk_trans = translate_with_ollama(chunk, ctx, sp)
+                    if chunk_trans.startswith('[ERROR]'):
+                        return chunk_trans, "Error en fragmento", ctx, ""
+                    translated_chunks.append(chunk_trans.strip())
+
+                trans = '\n'.join(translated_chunks)
+            # --- FIN NUEVO: chunking ---
+
             sc = sum(1 for t in terms if len(t["english"].split()) <= 5)
             lc = len(terms) - sc
-            td = f"Clave: {sc} | Referencia: {lc} | Prompt: {prompt_name}\n\nTRADUCCIONES OBLIGATORIAS:\n"
+            # --- NUEVO: Mostrar info de fragmentos en el panel de terminos ---
+            total_lines = len([l for l in lines if l.strip()])
+            chunk_info = f" | Fragmentos: {(total_lines + chunk_sz - 1) // chunk_sz}" if total_lines > chunk_sz else ""
+            td = f"Clave: {sc} | Referencia: {lc} | Prompt: {prompt_name}{chunk_info}\n\nTRADUCCIONES OBLIGATORIAS:\n"
             for t in terms:
                 if len(t["english"].split()) <= 5:
                     en, es = t["english"], t["spanish"]
@@ -516,13 +556,15 @@ def create_interface():
         target = prompt_name if prompt_name in names else (names[0] if names else None)
         return gr.update(selected=0), gr.update(value=target)
 
-    # ---- CSS ----
+    # --- MODIFICADO: CSS compacto para layout de 3 columnas ---
     custom_css = """
     .center-buttons { display: flex; justify-content: center; gap: 12px; margin-top: 8px; }
     .tooltip-container { position: relative; display: inline-flex; align-items: center; gap: 6px; }
     .tooltip-icon { display: inline-flex; align-items: center; justify-content: center; width: 20px; height: 20px; border-radius: 50%; background: #475569; color: #e2e8f0; font-size: 12px; font-weight: bold; cursor: help; }
     .tooltip-text { display: none; position: absolute; bottom: 130%; left: 50%; transform: translateX(-50%); background: #1e293b; color: #e2e8f0; padding: 10px 14px; border-radius: 6px; font-size: 13px; width: 300px; text-align: left; z-index: 100; box-shadow: 0 4px 12px rgba(0,0,0,0.5); line-height: 1.5; }
     .tooltip-container:hover .tooltip-text { display: block; }
+    .compact-controls { gap: 6px; }
+    .compact-controls .gr-slider { min-width: 100% !important; }
     """
 
     # ---- Build UI ----
@@ -540,32 +582,48 @@ def create_interface():
         """)
 
         # Tabs contenedor (con referencia para navegacion)
-        with gr.Tabs(selected=0) as tabs:
+        with gr.Tabs() as tabs:
 
             # ======== TAB 1: TRADUCIR ========
+            # --- MODIFICADO: Layout de 3 columnas para que todo quepa sin scroll ---
+            # Columna 1: Texto entrada | Columna 2: Controles compactos | Columna 3: Texto salida
             with gr.Tab(S.get("tab_traducir")):
-                with gr.Row():
-                    # Entrada
-                    with gr.Column(scale=1):
-                        gr.Markdown(f"### {S.get('panel_entrada_titulo')}")
-                        gr.Markdown(S.get("panel_entrada_descripcion"))
+                with gr.Row(equal_height=True):
+                    # ---- Columna 1: Entrada ----
+                    with gr.Column(scale=5):
                         input_text = gr.Textbox(
-                            label=S.get("panel_entrada_label"),
+                            label=f"{S.get('panel_entrada_titulo')} — {S.get('panel_entrada_descripcion')}",
                             placeholder=S.get("panel_entrada_placeholder"),
-                            lines=alt_in
+                            lines=7  # --- MODIFICADO: de alt_in (12) a 7 para que quepa todo
                         )
                         input_counter = gr.HTML(value=on_input_change(""))
 
+                    # ---- Columna 2: Controles compactos ----
+                    with gr.Column(scale=3, elem_classes=["compact-controls"]):
+                        # Slider de terminos de contexto
                         with gr.Row():
                             gr.HTML(f"""
-                            <div class="tooltip-container" style="margin-top: 24px;">
-                                <span style="font-weight: 600; font-size: 14px;">{S.get('slider_terminos_label')}</span>
+                            <div class="tooltip-container">
+                                <span style="font-weight: 600; font-size: 13px;">{S.get('slider_terminos_label')}</span>
                                 <span class="tooltip-icon">?</span>
                                 <span class="tooltip-text">{S.get('slider_terminos_tooltip')}</span>
                             </div>
                             """)
-                        num_terms = gr.Slider(minimum=10, maximum=50, value=30, step=5, label="")
+                        # --- MODIFICADO: maximo aumentado de 50 a 100 ---
+                        num_terms = gr.Slider(minimum=10, maximum=100, value=30, step=5, label="")
 
+                        # Slider de lineas por fragmento
+                        with gr.Row():
+                            gr.HTML(f"""
+                            <div class="tooltip-container">
+                                <span style="font-weight: 600; font-size: 13px;">Lineas por traduccion</span>
+                                <span class="tooltip-icon">?</span>
+                                <span class="tooltip-text">Texto largo se divide en fragmentos de este tamano. Menos lineas = mejor calidad (el modelo sigue el glosario), pero mas lento. Mas lineas = mas rapido, pero puede perder terminologia. Recomendado: 8 para precision, 15 para rapidez.</span>
+                            </div>
+                            """)
+                        chunk_size = gr.Slider(minimum=3, maximum=20, value=DEFAULT_CHUNK_SIZE, step=1, label="")
+
+                        # Selector de prompt
                         with gr.Row():
                             prompt_selector = gr.Dropdown(
                                 choices=prompt_names, value=def_pn,
@@ -575,29 +633,25 @@ def create_interface():
 
                         prompt_desc_display = gr.Textbox(
                             label=S.get("descripcion_prompt_label"),
-                            value=pm.get_info(def_pn)[0] or "(sin descripción)",
+                            value=pm.get_info(def_pn)[0] or "(sin descripcion)",
                             interactive=False, lines=1
                         )
 
-                        if centrar_btn:
-                            with gr.Row(elem_classes=["center-buttons"]):
-                                translate_btn = gr.Button(S.get("btn_traducir"), variant="primary", size="lg")
-                                clear_btn = gr.Button(S.get("btn_limpiar"), variant="secondary", size="lg")
-                        else:
+                        # Botones traducir y limpiar
+                        with gr.Row(elem_classes=["center-buttons"]):
                             translate_btn = gr.Button(S.get("btn_traducir"), variant="primary", size="lg")
-                            clear_btn = gr.Button(S.get("btn_limpiar"), variant="secondary")
+                            clear_btn = gr.Button(S.get("btn_limpiar"), variant="secondary", size="lg")
 
-                    # Salida
-                    with gr.Column(scale=1):
-                        gr.Markdown(f"### {S.get('panel_salida_titulo')}")
-                        gr.Markdown(S.get("panel_salida_descripcion"))
+                    # ---- Columna 3: Salida ----
+                    with gr.Column(scale=5):
                         output_text = gr.Textbox(
-                            label=S.get("panel_salida_label"),
+                            label=f"{S.get('panel_salida_titulo')} — {S.get('panel_salida_descripcion')}",
                             placeholder=S.get("panel_salida_placeholder"),
-                            lines=alt_out
+                            lines=7  # --- MODIFICADO: de alt_out (12) a 7 para que quepa todo
                         )
                         output_counter = gr.HTML(value=on_output_change(""))
 
+                # Acordiones de debug (colapsados por defecto, debajo de todo)
                 with gr.Accordion(S.get("accordion_terminos_titulo"), open=False):
                     terms_info = gr.Textbox(label=S.get("accordion_terminos_label"), lines=6)
 
@@ -623,16 +677,20 @@ def create_interface():
                         with gr.Row():
                             del_btn = gr.Button(S.get("prompts_eliminar_btn"), variant="stop", scale=1)
                             new_btn = gr.Button(S.get("prompts_nuevo_btn"), variant="secondary", scale=1)
+                        with gr.Column(scale=2):
+                            gr.Markdown(f"### {S.get('prompts_editor_titulo')}")
+                            save_btn = gr.Button(S.get("prompts_guardar_btn"), variant="primary", size="lg")
+                            go_btn = gr.Button(S.get("prompts_probar_btn"), variant="secondary", size="lg")
+                            ep_status = gr.Textbox(label=S.get("prompts_estado_label"), interactive=False, lines=1)
 
                     with gr.Column(scale=2):
                         gr.Markdown(f"### {S.get('prompts_editor_titulo')}")
                         ep_name = gr.Textbox(label=S.get("prompts_nombre_label"), placeholder=S.get("prompts_nombre_placeholder"), lines=1)
                         ep_desc = gr.Textbox(label=S.get("prompts_desc_label"), placeholder=S.get("prompts_desc_placeholder"), lines=2)
                         ep_content = gr.Textbox(label=S.get("prompts_contenido_label"), placeholder=S.get("prompts_contenido_placeholder"), lines=15)
-                        ep_status = gr.Textbox(label=S.get("prompts_estado_label"), interactive=False, lines=1)
-                        with gr.Row(elem_classes=["center-buttons"]):
-                            save_btn = gr.Button(S.get("prompts_guardar_btn"), variant="primary", size="lg")
-                            go_btn = gr.Button(S.get("prompts_probar_btn"), variant="secondary", size="lg")
+                        
+                            
+                            
 
         # Footer
         gr.HTML(f"""
@@ -643,7 +701,8 @@ def create_interface():
         """)
 
         # ======== EVENTOS - Traduccion ========
-        translate_btn.click(fn=do_translate, inputs=[input_text, num_terms, prompt_selector],
+        # --- MODIFICADO: Se agrego chunk_size como input del boton traducir ---
+        translate_btn.click(fn=do_translate, inputs=[input_text, num_terms, prompt_selector, chunk_size],
                            outputs=[output_text, terms_info, context_info, output_counter])
 
         clear_btn.click(
