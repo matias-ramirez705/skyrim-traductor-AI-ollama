@@ -82,7 +82,7 @@ Texto en inglés → Búsqueda de términos en ChromaDB (RAG) → Prompt con con
 
 ---
 
-<h2 id="interfaz-editor-json">🧩 Interfaz del servidor del editor de JSON</h2>
+<h2 id="interfaz-editor-json">🧩 Interfaz servidor del editor de JSON</h2>
 
 <p align="center">
   <img src="Imagenes/editor glosario 1.png" width="45%">
