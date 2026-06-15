@@ -20,6 +20,8 @@
 
 - [🤔 ¿Qué hace este proyecto?](#-qué-hace-este-proyecto)
 - [✨ Características](#-características)
+- [🖥️ Interfaz del servidor de traducción](#-interfaz-traductor)
+- [🧩 Interfaz del servidor del editor de JSON](#-interfaz-editor-json)
 - [🖥️ Requisitos del Sistema](#️-requisitos-del-sistema)
 - [📥 Descargas Necesarias](#-descargas-necesarias)
 - [🚀 Instalación Paso a Paso](#-instalación-paso-a-paso)
@@ -66,7 +68,36 @@ Texto en inglés → Búsqueda de términos en ChromaDB (RAG) → Prompt con con
 - 📋 **Flujo integrado con ESP Translate** — Copiar y pegar directo
 
 ---
+## 🖥️ Interfaz del servidor de traducción
 
+<p align="center">
+  <img src="Imagenes/interfaz traductor 1.png" width="45%">
+  <img src="Imagenes/interfaz traductor 2.png" width="45%">
+</p>
+
+<p align="center">
+  <img src="Imagenes/interfaz traductor 3.png" width="60%">
+</p>
+
+---
+
+## 🧩 Interfaz del servidor del editor de JSON
+
+<p align="center">
+  <img src="Imagenes/editor glosario 1.png" width="45%">
+  <img src="Imagenes/editor glosario 2.png" width="45%">
+</p>
+
+<p align="center">
+  <img src="Imagenes/editor glosario 3.png" width="45%">
+  <img src="Imagenes/editor glosario 4.png" width="45%">
+</p>
+
+<p align="center">
+  <img src="Imagenes/editor glosario 5.png" width="60%">
+</p>
+
+---
 ## 🖥️ Requisitos del Sistema
 
 ### Mínimos
