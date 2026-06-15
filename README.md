@@ -21,7 +21,7 @@
 - [🤔 ¿Qué hace este proyecto?](#-qué-hace-este-proyecto)
 - [✨ Características](#-características)
 - [🖥️ Interfaz del servidor de traducción](#interfaz-traduccion)
-- [🧩 Interfaz del servidor del editor de JSON](#interfaz-editor-json)
+- [🧩 Interfaz servidor del editor de JSON](#interfaz-editor-json)
 - [🖥️ Requisitos del Sistema](#️-requisitos-del-sistema)
 - [📥 Descargas Necesarias](#-descargas-necesarias)
 - [🚀 Instalación Paso a Paso](#-instalación-paso-a-paso)
