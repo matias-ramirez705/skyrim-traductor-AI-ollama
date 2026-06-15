@@ -68,6 +68,7 @@ Texto en inglés → Búsqueda de términos en ChromaDB (RAG) → Prompt con con
 - 📋 **Flujo integrado con ESP Translate** — Copiar y pegar directo
 
 ---
+
 ## 🖥️ Interfaz del servidor de traducción
 
 <p align="center">
@@ -98,6 +99,7 @@ Texto en inglés → Búsqueda de términos en ChromaDB (RAG) → Prompt con con
 </p>
 
 ---
+
 ## 🖥️ Requisitos del Sistema
 
 ### Mínimos
