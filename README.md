@@ -20,8 +20,8 @@
 
 - [🤔 ¿Qué hace este proyecto?](#-qué-hace-este-proyecto)
 - [✨ Características](#-características)
-- [🖥️ Interfaz del servidor de traducción](#interfaz-del-servidor-de-traduccion)
-- [🧩 Interfaz del servidor del editor de JSON](#interfaz-del-servidor-del-editor-de-json)
+- [🖥️ Interfaz del servidor de traducción](#interfaz-traduccion)
+- [🧩 Interfaz del servidor del editor de JSON](#interfaz-editor-json)
 - [🖥️ Requisitos del Sistema](#️-requisitos-del-sistema)
 - [📥 Descargas Necesarias](#-descargas-necesarias)
 - [🚀 Instalación Paso a Paso](#-instalación-paso-a-paso)
@@ -69,7 +69,7 @@ Texto en inglés → Búsqueda de términos en ChromaDB (RAG) → Prompt con con
 
 ---
 
-## 🖥️ Interfaz del servidor de traducción
+<h2 id="interfaz-traduccion">🖥️ Interfaz del servidor de traducción</h2>
 
 <p align="center">
   <img src="Imagenes/interfaz traductor 1.png" width="45%">
@@ -82,7 +82,7 @@ Texto en inglés → Búsqueda de términos en ChromaDB (RAG) → Prompt con con
 
 ---
 
-## 🧩 Interfaz del servidor del editor de JSON
+<h2 id="interfaz-editor-json">🧩 Interfaz del servidor del editor de JSON</h2>
 
 <p align="center">
   <img src="Imagenes/editor glosario 1.png" width="45%">
