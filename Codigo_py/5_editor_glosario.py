@@ -67,6 +67,8 @@ class GlossaryState:
         self.filepath = ""
         self.modified = False
         self.selected_index = -1
+        # --- NUEVO: indices de la ultima busqueda para mapear fila visible -> entrada real ---
+        self.filtered_indices = []  # Lista de indices reales en state.entries
 
     def reset(self):
         self.entries = []
@@ -74,6 +76,7 @@ class GlossaryState:
         self.filepath = ""
         self.modified = False
         self.selected_index = -1
+        self.filtered_indices = []  # --- NUEVO ---
 
     def add_entry(self, english, spanish, category="general", entry_type="", source="manual"):
         entry = {
@@ -209,6 +212,7 @@ def render_stats(entries):
 
 def new_glossary(filename):
     state.reset()
+    # --- NUEVO: filtered_indices ya se limpia en reset() ---
     if filename and filename.strip():
         safe_name = filename.strip()
         if not safe_name.endswith('.json'):
@@ -227,6 +231,7 @@ def load_json_file(file_obj):
     filepath = file_obj.name if hasattr(file_obj, 'name') else str(file_obj)
     try:
         count = state.load_from_json(filepath)
+        state.filtered_indices = []  # --- NUEVO: limpiar busqueda al cargar nuevo archivo ---
         return (render_line_preview(state.entries), render_stats(state.entries),
                 f"Cargado: {state.filename} ({count} entradas)", None, "", "", CATEGORIES[0], TYPES[0], "manual", -1, state.filename or "")
     except Exception as e:
@@ -286,7 +291,11 @@ def search_entries(query):
         return None, "No hay entradas para buscar"
     indices = state.search_entries(query or "")
     if not indices:
+        # --- MODIFICADO: limpiar indices filtrados cuando no hay resultados ---
+        state.filtered_indices = []
         return None, f"No se encontraron resultados para '{query}'"
+    # --- MODIFICADO: guardar indices reales para que on_table_select los use ---
+    state.filtered_indices = indices
     table_data = [[idx+1, state.entries[idx].get("english",""), state.entries[idx].get("spanish",""),
                     state.entries[idx].get("category","general"), state.entries[idx].get("type",""),
                     state.entries[idx].get("source","manual")] for idx in indices]
@@ -295,14 +304,23 @@ def search_entries(query):
 
 def on_table_select(evt: gr.SelectData):
     try:
-        row = evt.index[0] if isinstance(evt.index, (list, tuple)) else evt.index
-        if state.entries and row < len(state.entries):
-            entry = state.entries[row]
-            state.selected_index = row
+        # --- MODIFICADO: usar indice real desde filtered_indices, no la fila visible ---
+        display_row = evt.index[0] if isinstance(evt.index, (list, tuple)) else evt.index
+
+        # Si hay indices filtrados, mapear fila visible -> indice real en state.entries
+        if state.filtered_indices and 0 <= display_row < len(state.filtered_indices):
+            real_index = state.filtered_indices[display_row]
+        else:
+            # Si no hay busqueda activa, la fila visible = indice real
+            real_index = display_row
+
+        if state.entries and 0 <= real_index < len(state.entries):
+            entry = state.entries[real_index]
+            state.selected_index = real_index
             return (entry.get("english",""), entry.get("spanish",""),
                     entry.get("category","general") or CATEGORIES[0],
                     entry.get("type","") or TYPES[0],
-                    entry.get("source","manual"), row)
+                    entry.get("source","manual"), real_index)
     except Exception as e:
         print(f"Error al seleccionar: {e}")
     return "", "", CATEGORIES[0], TYPES[0], "manual", -1
@@ -382,18 +400,51 @@ def create_interface():
         status_text = gr.HTML(value="<p style='color:#888;'>Listo para crear o cargar un glosario</p>")
         stats_html = gr.HTML(value=render_stats(state.entries))
 
-        with gr.Tabs():
+        with gr.Tabs(selected="tab_buscar") as tabs:
 
-            # TAB 1: Agregar Lineas
-            with gr.Tab("Agregar Lineas"):
+            # TAB 1: Buscar y Editar (pestaña principal por defecto)
+            with gr.Tab("Buscar y Editar", id="tab_buscar"):
+                gr.Markdown("**Busca y edita entradas existentes.** Haz clic en una fila para editarla.")
+                with gr.Row():
+                    search_input = gr.Textbox(label="Buscar", placeholder="Buscar en ingles, espanol o categoria...", scale=4)
+                    search_btn = gr.Button("Buscar", variant="primary", scale=1)
+                    search_all_btn = gr.Button("Ver Todas", variant="secondary", scale=1)
+
+                search_status = gr.Textbox(label="Resultado", value="", interactive=False)
+                search_results = gr.Dataframe(
+                    headers=["#", "Ingles", "Espanol", "Categoria", "Tipo", "Fuente"],
+                    label="Entradas encontradas (clic para editar)",
+                    interactive=False, wrap=True
+                )
+
+                with gr.Row():
+                    # --- MODIFICADO: editar y controles en una sola fila para compactar ---
+                    with gr.Column(scale=3):
+                        edit_index_hidden = gr.Number(value=-1, visible=False, precision=0)
+                        with gr.Row():
+                            edit_en = gr.Textbox(label="Ingles", placeholder="Selecciona una entrada de la tabla...", scale=1)
+                            edit_es = gr.Textbox(label="Espanol", placeholder="...", scale=1)
+                        with gr.Row():
+                            edit_cat = gr.Dropdown(choices=CATEGORIES, value=CATEGORIES[0], label="Categoria", scale=1)
+                            edit_type = gr.Dropdown(choices=TYPES, value=TYPES[0], label="Tipo", scale=1)
+                            edit_source = gr.Textbox(label="Fuente", value="manual", scale=1)
+                    with gr.Column(scale=1, min_width=120):
+                        gr.Markdown("### Acciones")
+                        save_edit_btn = gr.Button("Guardar Cambios", variant="primary")
+                        delete_btn = gr.Button("Eliminar", variant="stop")
+                        move_up_btn = gr.Button("⬆ Subir", variant="secondary")
+                        move_down_btn = gr.Button("⬇ Bajar", variant="secondary")
+
+            # TAB 2: Agregar Lineas
+            with gr.Tab("Agregar Lineas", id="tab_agregar"):
                 gr.Markdown("**Modo de uso:** Cada linea se convierte en una entrada. Las lineas se emparejan por numero (1 con 1, 2 con 2, etc).")
                 with gr.Row():
                     with gr.Column(scale=1):
                         gr.Markdown("### Texto Original (Ingles)")
-                        en_textarea = gr.Textbox(label="", placeholder="Pega aqui las lineas en ingles...\n\nCada linea = una entrada", lines=10)
+                        en_textarea = gr.Textbox(label="", placeholder="Pega aqui las lineas en ingles...\n\nCada linea = una entrada", lines=8)
                     with gr.Column(scale=1):
                         gr.Markdown("### Texto Traducido (Espanol)")
-                        es_textarea = gr.Textbox(label="", placeholder="Pega aqui las traducciones...\n\nCada linea = una entrada", lines=10)
+                        es_textarea = gr.Textbox(label="", placeholder="Pega aqui las traducciones...\n\nCada linea = una entrada", lines=8)
                 with gr.Row():
                     cat_dropdown = gr.Dropdown(choices=CATEGORIES, value=CATEGORIES[0], label="Categoria", scale=1)
                     source_input = gr.Textbox(label="Fuente (source)", value="manual", placeholder="ej: manual, mod_xxx", scale=1)
@@ -409,45 +460,13 @@ def create_interface():
                     single_source = gr.Textbox(label="Fuente", value="manual", scale=1)
                     add_single_btn = gr.Button("Agregar", variant="secondary", scale=1)
 
-            # TAB 2: Vista Previa
-            with gr.Tab("Vista Previa"):
+            # TAB 3: Vista Previa
+            with gr.Tab("Vista Previa", id="tab_vista"):
                 gr.Markdown("**Vista previa** con numeros de linea, como en ESP Translate.")
                 preview_html = gr.HTML(value=render_line_preview(state.entries))
 
-            # TAB 3: Buscar y Editar
-            with gr.Tab("Buscar y Editar"):
-                gr.Markdown("**Busca y edita entradas existentes.** Haz clic en una fila para editarla.")
-                with gr.Row():
-                    search_input = gr.Textbox(label="Buscar", placeholder="Buscar en ingles, espanol o categoria...", scale=4)
-                    search_btn = gr.Button("Buscar", variant="primary", scale=1)
-                    search_all_btn = gr.Button("Ver Todas", variant="secondary", scale=1)
-
-                search_status = gr.Textbox(label="Resultado", value="", interactive=False)
-                search_results = gr.Dataframe(
-                    headers=["#", "Ingles", "Espanol", "Categoria", "Tipo", "Fuente"],
-                    label="Entradas encontradas (clic para editar)",
-                    interactive=False, wrap=True
-                )
-
-                gr.Markdown("---")
-                gr.Markdown("### Editar entrada seleccionada")
-                edit_index_hidden = gr.Number(value=-1, visible=False, precision=0)
-
-                with gr.Row():
-                    edit_en = gr.Textbox(label="Ingles", placeholder="Selecciona una entrada de la tabla...", scale=3)
-                    edit_es = gr.Textbox(label="Espanol", placeholder="...", scale=3)
-                with gr.Row():
-                    edit_cat = gr.Dropdown(choices=CATEGORIES, value=CATEGORIES[0], label="Categoria", scale=1)
-                    edit_type = gr.Dropdown(choices=TYPES, value=TYPES[0], label="Tipo", scale=1)
-                    edit_source = gr.Textbox(label="Fuente", value="manual", scale=1)
-                with gr.Row():
-                    save_edit_btn = gr.Button("Guardar Cambios", variant="primary", scale=1)
-                    delete_btn = gr.Button("Eliminar", variant="stop", scale=1)
-                    move_up_btn = gr.Button("Subir", variant="secondary", scale=1)
-                    move_down_btn = gr.Button("Bajar", variant="secondary", scale=1)
-
             # TAB 4: Archivos en BD
-            with gr.Tab("Archivos en BD"):
+            with gr.Tab("Archivos en BD", id="tab_archivos"):
                 gr.Markdown("**Archivos JSON en la carpeta BD** que el actualizador leeria para agregar terminos a ChromaDB.")
                 json_list = gr.Textbox(label="Archivos JSON en BD", value="", lines=10, interactive=False)
                 refresh_jsons_btn = gr.Button("Actualizar lista", variant="secondary")
