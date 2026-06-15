@@ -62,7 +62,7 @@ MAX_CONTEXT_TERMS = 30
 TEMPERATURE = 0.1
 GRADIO_PORT = 7860
 
-# --- NUEVO: Tamanio de fragmento para traduccion por lotes ---
+# --- NUEVO: Tamaño de fragmento para traduccion por lotes ---
 # Cuando el texto tiene mas lineas que este valor, se divide en fragmentos
 # y cada uno se traduce por separado con el mismo contexto del glosario.
 # Menos lineas = mejor calidad (el modelo sigue el glosario), mas lento.
