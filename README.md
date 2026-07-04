@@ -101,10 +101,14 @@ Texto en inglés → Búsqueda de términos en ChromaDB (RAG) → Prompt con con
 
 ---
 
-<h2 id="#video">🖥️ Video de demostración</h2>
+<h2 id="video">🧩 Video de demostración</h2>
+
 <p align="center">
-  [![Video de demostración](https://img.youtube.com/vi/2ue3h1VDl6c/hqdefault.jpg)](https://youtu.be/2ue3h1VDl6c)
+  <a href="https://www.youtube.com/watch?v=2ue3h1VDl6c" target="_blank">
+    <img src="https://img.youtube.com/vi/2ue3h1VDl6c/maxresdefault.jpg" alt="Ver video de demostración" width="800">
+  </a>
 </p>
+
 ---
 
 ## 🖥️ Requisitos del Sistema
