@@ -22,7 +22,7 @@
 - [✨ Características](#-características)
 - [🖥️ Interfaz del servidor de traducción](#interfaz-traduccion)
 - [🧩 Interfaz servidor del editor de JSON](#interfaz-editor-json)
-- [🖥️Video de demostración](#video)
+- [🖥️ Video de demostración](#video)
 - [🖥️ Requisitos del Sistema](#️-requisitos-del-sistema)
 - [📥 Descargas Necesarias](#-descargas-necesarias)
 - [🚀 Instalación Paso a Paso](#-instalación-paso-a-paso)
