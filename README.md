@@ -22,6 +22,7 @@
 - [✨ Características](#-características)
 - [🖥️ Interfaz del servidor de traducción](#interfaz-traduccion)
 - [🧩 Interfaz servidor del editor de JSON](#interfaz-editor-json)
+- [🖥️Video de demostración](#video)
 - [🖥️ Requisitos del Sistema](#️-requisitos-del-sistema)
 - [📥 Descargas Necesarias](#-descargas-necesarias)
 - [🚀 Instalación Paso a Paso](#-instalación-paso-a-paso)
@@ -98,6 +99,12 @@ Texto en inglés → Búsqueda de términos en ChromaDB (RAG) → Prompt con con
   <img src="Imagenes/editor glosario 5.png" width="60%">
 </p>
 
+---
+
+<h2 id="#video">🖥️ Video de demostración</h2>
+<p align="center">
+  [![Video de demostración](https://img.youtube.com/vi/2ue3h1VDl6c/hqdefault.jpg)](https://youtu.be/2ue3h1VDl6c)
+</p>
 ---
 
 ## 🖥️ Requisitos del Sistema
