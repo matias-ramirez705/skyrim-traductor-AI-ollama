@@ -145,7 +145,7 @@ def get_available_languages():
     langs = {"es": "Espanol"}  # fallback siempre disponible
     if STRINGS_DIR.exists():
         for f in STRINGS_DIR.glob("*.json"):
-            code = f.stem  # es, en, ru, pt
+            code = f.stem  # es, en, ru, pt, etc
             try:
                 data = json.loads(f.read_text(encoding='utf-8'))
                 langs[code] = data.get("lang_name", code.upper())

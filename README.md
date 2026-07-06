@@ -286,7 +286,7 @@ Sigue estos pasos **en orden**. Solo necesitas hacerlos **una vez** la primera v
 
 > ✅ **El glosario ya está generado** — El archivo `skyrim_glossary_en_es.json` ya viene incluido en el repositorio con 27,955 términos. **NO necesitas ejecutar** `1_crear_glosario.bat` a menos que quieras regenerarlo desde los archivos `.strings` originales.
 
-> 🌐 **Soporte multilenguaje**: Si quieres cargar glosarios adicionales para otros idiomas o mods, coloca los JSON correspondientes en `BD/` y ejecuta `3_iniciar_glosario.bat` indicando el nombre de la base ChromaDB destino (por ejemplo `chroma_db_dawnguard`). Cada base aparecerá luego en el selector de glosario de la interfaz.
+> 🌐 **Soporte multilenguaje**: Si quieres cargar glosarios adicionales para otros idiomas o mods, crea los nuevos glosarios usando `1_crear_glosario.bat` y seleccionando las carpetas según el idioma, si no esta la carpeta créela manteniendo el mismo formato, `0 - [Idioma] Original Strings` para strings del juego base y `1 - [Idioma]  DLC Strings` para lo strings de los dlc, estos archivos los puede encontrar en ` https://www.nexusmods.com/skyrimspecialedition/mods/184308?tab=posts ` o bien puede coloca los JSON correspondientes en `BD/` y ejecuta `3_iniciar_glosario.bat` indicando el nombre de la base ChromaDB destino (por ejemplo `chroma_db_dawnguard`). Cada base aparecerá luego en el selector de glosario de la interfaz.
 
 ### Detalle de cada paso
 
@@ -309,11 +309,11 @@ Esto instala dentro del venv:
 3_iniciar_glosario.bat
 ```
 
-Esto lee `skyrim_glossary_en_es.json` y lo carga en ChromaDB (búsqueda vectorial). Crea la carpeta `BD\chroma_db\`.
+Esto lee `skyrim_glossary_en_[].json` (se mostrar un listado con los archivos encontrados, luego seleccione el que quiera usar para generar el glosario) y lo carga en ChromaDB (búsqueda vectorial). Crea la carpeta `BD\chroma_db\`.
 
-⏱️ Tarda ~1-2 minutos.
+⏱️ Tarda ~4-8 minutos.
 
-> 💡 Para crear glosarios adicionales (otros idiomas o mods), copia el archivo `3_iniciar_glosario.bat` y modifica la variable que indica la ruta de salida de ChromaDB y el JSON de entrada. Así podrás generar múltiples bases intercambiables desde el selector.
+> 💡 Para crear glosarios adicionales solo ejecute otra vez `3_iniciar_glosario.bat` y seleccione un archivos distinto json.
 
 #### 3️⃣ Iniciar el servidor de traducción
 
@@ -352,41 +352,42 @@ skyrim-traductor-AI-ollama/
 │
 ├── 🐍 Codigo_py/                         ← Código fuente Python
 │   ├── 0_crear_glosario.py               ← Parser de .strings → JSON
-│   ├── crear_glosario.py                 ← Alias del anterior
 │   ├── 1_cargar_glosario.py              ← JSON → ChromaDB
 │   ├── 2_servidor_traduccion.py          ← Servidor Gradio + RAG + multilenguaje
 │   ├── 5_editor_glosario.py              ← Editor web de glosario
 │   ├── actualizar_glosario.py            ← Agrega términos nuevos
-│   └── limpiar_glosario.py              ← Limpia JSON corrupto
+│   └── limpiar_glosario.py               ← Limpia JSON corrupto
+│
+├── ⚙️ editor_config/                     ← Configuración del editor de json
+│   └── strings/
+│        ├── en.json                       ← Textos de la interfaz (inglés)
+│        ├── es.json                       ← Textos de la interfaz (español)
+│        ├── pt.json                       ← Textos de la interfaz (portugués)
+│        └── ru.json                       ← Textos de la interfaz (ruso)
 │
 ├── ⚙️ servidor_config/                   ← Configuración
 │   ├── config_visual.json                ← Tema, colores, fuentes
 │   ├── strings_ui.json                   ← Textos de la interfaz (español, por defecto)
-│   ├── strings_ui_en.json                ← Textos de la interfaz (inglés)
-│   ├── strings_ui_fr.json                ← Textos de la interfaz (francés)
-│   ├── strings_ui_de.json                ← Textos de la interfaz (alemán)
-│   ├── strings_ui_it.json                ← Textos de la interfaz (italiano)
-│   ├── strings_ui_pt.json                ← Textos de la interfaz (portugués)
-│   ├── strings_ui_ru.json                ← Textos de la interfaz (ruso)
+│   ├── strings/
+│   │    ├── en.json                ← Textos de la interfaz (inglés)
+│   │    ├── es.json                ← Textos de la interfaz (español)
+│   │    ├── pt.json                ← Textos de la interfaz (portugués)
+│   │    └── ru.json                ← Textos de la interfaz (ruso)
 │   └── prompts/
 │       └── saved_prompts.json            ← Prompts guardados (se crea al usar)
 │
 ├── 📚 BD/                                ← Base de datos y glosarios
 │   ├── skyrim_glossary_en_es.json        ← Glosario 27,955 términos ✅
-│   ├── palabras_agregadas.json           ← Términos manuales (opcional)
+│   ├── skyrim_glossary_en_ru.json        ← Glosario 27,955 términos ✅
 │   ├── chroma_db/                        ← Base vectorial ChromaDB (por defecto)
-│   ├── chroma_db_dawnguard/              ← Base vectorial para Dawnguard (opcional)
-│   ├── chroma_db_hearthfire/             ← Base vectorial para Hearthfire (opcional)
-│   ├── chroma_db_<idioma>/               ← Bases vectoriales por idioma (opcional)
-│   ├── 0 - English Original Strings/     ← Archivos .strings EN (opcional)
-│   └── 0 - Spanish Original Strings/     ← Archivos .strings ES (opcional)
+│   ├── 0 - English Original Strings/     ← Archivos .strings EN
+│   ├── 0 - Russian Original Strings/     ← Archivos .strings RU
+│   ├── 0 - Spanish Original Strings/     ← Archivos .strings ES
+│   ├── 1 - English DLC Strings/          ← Archivos .strings EN
+│   ├── 1 - Russian DLC Strings/          ← Archivos .strings RU
+│   └── 1 - Spanish DLC Strings/          ← Archivos .strings ES
 │
-├── 🔧 venv/                              ← Entorno virtual Python
-│
-└── 🔄 Git (opcional)
-    ├── git_subir_primera_vez.bat         ← Primera subida a GitHub
-    ├── git_subir_cambios.bat             ← Subir cambios
-    └── git_descargar_cambios.bat         ← Descargar cambios
+└── 🔧 venv/                              ← Entorno virtual Python
 ```
 
 ---
@@ -405,21 +406,23 @@ Abre una ventana de CMD con el entorno virtual ya activado. Útil para ejecutar 
 
 ### `1_crear_glosario.bat` — 📚 Generar glosario (OPCIONAL)
 
-> ⚠️ **No necesitas ejecutar esto** — El glosario `skyrim_glossary_en_es.json` ya viene incluido en el repo.
+> ⚠️ **No necesitas ejecutar esto** — El glosario `skyrim_glossary_en_es.json` para español y `skyrim_glossary_en_ru.json` para ruso ya viene incluido en el repo.
 
 Genera el archivo JSON del glosario a partir de los archivos `.strings` binarios de Skyrim. Solo lo necesitas si:
 - Quieres regenerar el glosario desde cero
 - Tienes archivos `.strings` de otros mods o DLCs que quieres agregar
 
 **Requisito**: Los archivos `.strings` deben estar en:
-- `BD/0 - English Original Strings/strings/`
-- `BD/0 - Spanish Original Strings/strings/`
+- `BD/0 - [ Idioma ] Original Strings/strings/`
+- `BD/1 - [ Idioma ] DLC Strings/strings/`
 
 ```bash
 1_crear_glosario.bat
 ```
+Al ejecutar mostrara un menu con las carpetas que comiencen con `0 - `, seleccione la carpeta del idioma a usar. Luego solicitara lo mismo para `1 - `, luego pedirá 
+definir un nombre (use el que se da como referencia en el cmd ejemplo russian), luego pedirá el termino del idioma (igual dará un valor como sugerencia, manteniendo el ejemplo use ru). Y listo ahora se generara el glosario con lo seleccionado.
 
-⏱️ Tarda ~5-10 minutos dependiendo de la cantidad de archivos.
+⏱️ Tarda ~1-4 minutos dependiendo de la cantidad de archivos.
 
 ---
 
@@ -449,9 +452,9 @@ Lee `skyrim_glossary_en_es.json` y lo carga en ChromaDB para búsqueda semántic
 3_iniciar_glosario.bat
 ```
 
-⏱️ Tarda ~1-2 minutos. Solo ejecútalo la primera vez o cuando cambies el glosario.
+⏱️ Tarda ~4-15 minutos. Solo ejecútalo la primera vez o cuando cambies el glosario.
 
-> 🌐 **Glosarios multilenguaje**: Para generar bases adicionales (otros idiomas, otros mods o variantes personalizadas), edita las rutas de entrada/salida dentro del `.bat` (o crea una copia del archivo) y apunta a un JSON distinto. La nueva carpeta `chroma_db_<nombre>/` aparecerá automáticamente en el selector de glosario del traductor.
+> 🌐 **Glosarios multilenguaje**: > 💡 Para crear glosarios adicionales solo ejecute otra vez `3_iniciar_glosario.bat` y seleccione un archivos distinto json.
 
 ---
 
@@ -463,7 +466,7 @@ El archivo principal. Inicia el servidor de traducción con interfaz web Gradio.
 1. 🦙 Verifica que Ollama esté corriendo → Lo inicia si no está
 2. 🧠 Verifica que `qwen2.5:7b` esté disponible → Lo descarga si falta
 3. 🗂️ Escanea `BD/` y lista todas las bases ChromaDB disponibles para el selector de glosario
-4. 🌐 Carga los archivos de idioma disponibles en `servidor_config/strings_ui_*.json`
+4. 🌐 Carga los archivos de idioma disponibles en `servidor_config/strings/`
 5. 🌐 Inicia el servidor en `http://localhost:7860`
 6. 🖥️ Abre tu navegador automáticamente
 
@@ -478,8 +481,9 @@ El archivo principal. Inicia el servidor de traducción con interfaz web Gradio.
 ### `5_actualizar_glosario.bat` — ➕ Agregar términos
 
 Agrega términos nuevos a ChromaDB sin necesidad de recargar todo el glosario. Lee términos de:
-- `BD/palabras_agregadas.json` (términos manuales)
-- Cualquier otro JSON en `BD/` (excepto el glosario principal)
+- Solicita escoger un archivo ChromaDB (an caso de tener mas de uno)
+- agregara a ese ChromaDB las palabras de los Json que esten en `BD` por ejemplo `BD/palabras_agregadas.json` (términos manuales)
+- El json creado solo se hara con la etiqueta `"spanish"`, si agrego palabaras para otro idioma cambielo para su idioma correspondiente (consejo: vea como esta su skyrim_glossary_en_[].json)
 
 ```bash
 5_actualizar_glosario.bat
@@ -487,6 +491,30 @@ Agrega términos nuevos a ChromaDB sin necesidad de recargar todo el glosario. L
 
 Úsalo cuando agregues términos manualmente al glosario y quieras que el traductor los encuentre.
 
+> 💡 Los archivos .json creados solo tendran la etiqueta spanish ya que es por defecto, luego debe cambiar eso manualmente si usa otro idiomas:
+```bash
+[
+  {
+    "english": "test",
+    "spanish": "prueba",
+    "category": "general",
+    "type": "",
+    "source": "manual"
+  }
+]
+```
+eso al ruso quedaria:
+```bash
+[
+  {
+    "english": "test",
+    "russian": "prueba",
+    "category": "general",
+    "type": "",
+    "source": "manual"
+  }
+]
+```
 ---
 
 ### `6_iniciar_editor_glosario.bat` — ✏️ Editor de glosario
@@ -525,17 +553,9 @@ Elimina entradas corruptas o vacías del archivo JSON del glosario. Crea un back
 - Entradas con inglés de 1 carácter o menos
 - Entradas duplicadas
 
-**Backup**: Crea `skyrim_glossary_en_es_backup.json` antes de modificar.
+**Backup**: Crea `skyrim_glossary_en_[]_backup.json` antes de modificar.
 
----
-
-### 🔄 Archivos Git (opcionales)
-
-| Archivo | Qué hace |
-|---|---|
-| `git_subir_primera_vez.bat` | Guía paso a paso para subir el repo a GitHub por primera vez |
-| `git_subir_cambios.bat` | Sube cambios locales a GitHub (`git add + commit + push`) |
-| `git_descargar_cambios.bat` | Descarga cambios desde GitHub (`git pull`) |
+> 💡 Al ejecutar pedira seleccionar que `skyrim_glossary_en_[]_backup.json` de lso que detecte desea limpiar.
 
 ---
 
@@ -545,14 +565,14 @@ Elimina entradas corruptas o vacías del archivo JSON del glosario. Crea un back
 
 **Ubicación**: `Codigo_py/0_crear_glosario.py` | **Ejecutado por**: `1_crear_glosario.bat`
 
-Parsea los archivos binarios `.strings`, `.dlstrings` e `.ilstrings` del formato Bethesda y genera `skyrim_glossary_en_es.json`.
+Parsea los archivos binarios `.strings`, `.dlstrings` e `.ilstrings` del formato Bethesda y genera `skyrim_glossary_en_[].json`.
 
 **Características:**
 - 🔢 Parser binario del formato Bethesda (header + directory + data block)
 - 🏷️ Clasificación automática por categoría (lugar, npc, magia, arma, armadura, criatura, facción, misión, diálogo, descripción)
-- 🔗 Emparejamiento de entradas EN/ES por stringID
+- 🔗 Emparejamiento de entradas EN/[idioma ingresado] por stringID
 - 🧹 Limpieza y deduplicación de entradas
-- 📂 Escaneo automático de todos los archivos `.strings` en las carpetas de BD
+- 📂 Escaneo automático de todos los archivos `.strings` en las carpetas de BD y lsita de seleccion a usar
 
 ---
 
@@ -564,7 +584,7 @@ Lee el JSON del glosario y lo carga en una base de datos vectorial ChromaDB pers
 
 **Características:**
 - 📦 Inserción por lotes (5000 por batch)
-- 📝 Documentos almacenados como `"english | spanish"` para búsqueda bilingüe
+- 📝 Documentos almacenados como `"english | [idioma dado]"` para búsqueda bilingüe
 - 💾 Almacenamiento persistente en `BD/chroma_db/` (o en la ruta indicada para glosarios adicionales)
 - 🧪 Búsquedas de prueba (Whiterun, Stormcloaks, dragon shout, etc.)
 - 🌐 Compatible con múltiples bases paralelas para soporte multilenguaje
@@ -585,7 +605,7 @@ El corazón del proyecto. Interfaz web Gradio + motor RAG + Ollama + soporte mul
 | 🤖 **Traductor** | Envía prompt + contexto a Ollama para traducir |
 | 📝 **PromptManager** | CRUD de prompts personalizados |
 | 🎨 **Config visual** | Carga tema, colores y textos desde JSON |
-| 🌐 **Gestor de idiomas** | Carga dinámicamente los `strings_ui_<lang>.json` disponibles |
+| 🌐 **Gestor de idiomas** | Carga dinámicamente los `strings` disponibles |
 | 🗂️ **Selector de glosario** | Lista y cambia entre bases ChromaDB en caliente |
 | 🖥️ **Interfaz Gradio** | Dos tabs: Traducir y Mis Prompts |
 
@@ -596,13 +616,15 @@ El corazón del proyecto. Interfaz web Gradio + motor RAG + Ollama + soporte mul
 - **Puerto**: 7860
 
 **Selectores multilenguaje en la interfaz:**
-- 🌐 **Idioma de la interfaz**: dropdown con todos los `strings_ui_*.json` detectados
+- 🌐 **Idioma de la interfaz**: dropdown con todos los `strings en formato .json` detectados
 - 🗂️ **Glosario de búsqueda**: dropdown con todas las carpetas `chroma_db*` detectadas en `BD/`
 
 **Prompts predefinidos:**
 1. 🎮 **Traducción Skyrim (por defecto)** — 12 reglas obligatorias con lista de no-traducir
-2. 🐱 **Diálogo Khajiit** — Mantiene habla en tercera persona
-3. 📖 **Libros y Notas** — Tono literario y narrativo medieval
+2. 🎮 **Traducción Skyrim (English - Russian)** — 12 reglas obligatorias con lista de no-traducir
+3. 🐱 **Diálogo Khajiit** — Mantiene habla en tercera persona
+4. 📖 **Libros y Notas** — Tono literario y narrativo medieval
+5. ...
 
 ---
 
@@ -617,7 +639,7 @@ Interfaz web para editar el glosario JSON desde el navegador. Incluye selectores
 - 👁️ **Vista previa** — Con syntax highlighting
 - 🔍 **Buscar y editar** — Búsqueda y edición de términos
 - 📂 **Archivos en BD** — Ver archivos de la carpeta BD
-- 🌐 **Idioma / Glosario** — Selección de idioma de interfaz y glosario activo
+- 🌐 **Idioma** — Selección de idioma de interfaz
 
 **Categorías con colores:**
 
@@ -678,22 +700,20 @@ Todos los textos, labels, tooltips y mensajes de la interfaz son configurables. 
 | Archivo | Idioma | Estado |
 |---|---|---|
 | `strings_ui.json` | 🇪🇸 Español (por defecto) | ✅ Incluido |
-| `strings_ui_en.json` | 🇬🇧 Inglés | ✅ Incluido |
-| `strings_ui_fr.json` | 🇫🇷 Francés | ✅ Incluido |
-| `strings_ui_de.json` | 🇩🇪 Alemán | ✅ Incluido |
-| `strings_ui_it.json` | 🇮🇹 Italiano | ✅ Incluido |
-| `strings_ui_pt.json` | 🇵🇹 Portugués | ✅ Incluido |
-| `strings_ui_ru.json` | 🇷🇺 Ruso | ✅ Incluido |
+| `en.json` | 🇬🇧 Inglés | ✅ Incluido |
+| `es.json` | 🇫🇷 Francés | ✅ Incluido |
+| `pt.json` | 🇵🇹 Portugués | ✅ Incluido |
+| `ru.json` | 🇷🇺 Ruso | ✅ Incluido |
 
-> 💡 Cada archivo contiene 60+ claves traducidas (labels, botones, tooltips, mensajes de error, etc.). Para agregar un nuevo idioma, copia `strings_ui.json` con el sufijo del nuevo código (ej: `strings_ui_ja.json` para japonés) y traduce los valores. El sistema lo detectará automáticamente al iniciar el servidor.
+> 💡 Cada archivo contiene 60+ claves traducidas (labels, botones, tooltips, mensajes de error, etc.). Para agregar un nuevo idioma, copia `en.json` con el sufijo del nuevo código (ej: `ja.json` para japonés) y traduce los valores. El sistema lo detectará automáticamente al iniciar el servidor.
 
 ### 🗂️ Glosarios disponibles — `BD/chroma_db*`
 
 El selector de glosario de la interfaz lista automáticamente todas las carpetas `chroma_db*` presentes en `BD/`. Para registrar una nueva base:
 
 1. Coloca el JSON del glosario en `BD/` (ej: `skyrim_glossary_en_fr.json` para francés).
-2. Ejecuta `3_iniciar_glosario.bat` (o una copia modificada) apuntando a una nueva carpeta de salida, por ejemplo `BD/chroma_db_fr/`.
-3. Reinicia el servidor si estaba corriendo. El nuevo glosario aparecerá en el selector.
+2. Ejecuta `3_iniciar_glosario.bat` y seleccione el archivo JSON correspondiente (ej: `skyrim_glossary_en_fr.json` sera el numero 2, pues coloque 2).
+3. Reinicia el servidor si estaba corriendo. El nuevo glosario aparecerá en el selector arriba a la izquierda.
 
 ### 💬 Prompts guardados — `servidor_config/prompts/saved_prompts.json`
 
