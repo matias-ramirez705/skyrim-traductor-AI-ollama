@@ -149,7 +149,8 @@ Dentro se agregaran los glosarios de cada idioma.
 </p>
 
 <p align="center">
-  <img src="Imagenes/interfaz traductor 3.png" width="60%">
+  <img src="Imagenes/interfaz traductor 3.png" width="45%">
+  <img src="Imagenes/interfaz traductor 4.png" width="45%">
 </p>
 
 > 🌐 **Novedad**: La interfaz ahora incluye selectores de **idioma de la interfaz** y de **glosario de búsqueda (ChromaDB)** en la parte superior de la pestaña de traducción.
@@ -169,7 +170,8 @@ Dentro se agregaran los glosarios de cada idioma.
 </p>
 
 <p align="center">
-  <img src="Imagenes/editor glosario 5.png" width="60%">
+  <img src="Imagenes/editor glosario 5.png" width="45%">
+  <img src="Imagenes/editor glosario 6.png" width="45%">
 </p>
 
 ---
@@ -314,6 +316,14 @@ Esto lee `skyrim_glossary_en_[].json` (se mostrar un listado con los archivos en
 ⏱️ Tarda ~4-8 minutos.
 
 > 💡 Para crear glosarios adicionales solo ejecute otra vez `3_iniciar_glosario.bat` y seleccione un archivos distinto json.
+<p align="center">
+  <img src="Imagenes/crear glosario 1.png" width="45%">
+  <img src="Imagenes/crear glosario 2.png" width="45%">
+</p>
+<p align="center">
+  <img src="Imagenes/crear glosario 3.png" width="65%">
+</p>
+
 
 #### 3️⃣ Iniciar el servidor de traducción
 
