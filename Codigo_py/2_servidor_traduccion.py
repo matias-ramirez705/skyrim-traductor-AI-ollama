@@ -54,7 +54,10 @@ COLLECTION_NAME = "skyrim_terminology"
 
 PROMPTS_DIR = BASE_DIR / "servidor_config" / "prompts"
 CONFIG_FILE = BASE_DIR / "servidor_config" / "config_visual.json"
-STRINGS_FILE = BASE_DIR / "servidor_config" / "strings_ui.json"
+# --- MODIFICADO: Ruta de strings multilenguaje (carpeta con 1 JSON por idioma) ---
+STRINGS_DIR = BASE_DIR / "servidor_config" / "strings"
+# STRINGS_FILE legacy (si existe strings_ui.json, se usa como fallback)
+STRINGS_FILE_LEGACY = BASE_DIR / "servidor_config" / "strings_ui.json"
 
 OLLAMA_MODEL = "qwen2.5:7b"
 CHROMA_SEARCH_LIMIT = 80
@@ -62,7 +65,7 @@ MAX_CONTEXT_TERMS = 30
 TEMPERATURE = 0.1
 GRADIO_PORT = 7860
 
-# --- NUEVO: Tamaño de fragmento para traduccion por lotes ---
+# --- NUEVO: Tamanio de fragmento para traduccion por lotes ---
 # Cuando el texto tiene mas lineas que este valor, se divide en fragmentos
 # y cada uno se traduce por separado con el mismo contexto del glosario.
 # Menos lineas = mejor calidad (el modelo sigue el glosario), mas lento.
@@ -83,60 +86,45 @@ def load_json_config(filepath, fallback=None):
     return fallback or {}
 
 
+# --- MODIFICADO: Strings se cargan dinamicamente desde strings/<lang>.json ---
+# DEFAULT_STRINGS se mantiene como fallback interno si no hay archivos de idioma
 DEFAULT_STRINGS = {
-    "titulo": "Agente de Traducci\u00f3n Skyrim",
-    "subtitulo": "Traductor con contexto del juego usando IA local + terminolog\u00eda oficial",
-    "tab_traducir": "Traducir",
-    "tab_prompts": "Mis Prompts",
-    "panel_entrada_titulo": "Texto en Ingl\u00e9s",
-    "panel_entrada_descripcion": "Pega aqu\u00ed las l\u00edneas desde ESP Translate",
-    "panel_entrada_label": "Texto Original (Ingl\u00e9s)",
-    "panel_entrada_placeholder": "Pega aqu\u00ed las l\u00edneas a traducir...\n\nEjemplo:\nWhiterun is a city in the hold of Whiterun.\nThe Stormcloaks are fighting the Imperial Legion.",
-    "panel_salida_titulo": "Traducci\u00f3n al Espa\u00f1ol",
-    "panel_salida_descripcion": "Copia este texto y p\u00e9galo en ESP Translate",
-    "panel_salida_label": "Texto Traducido (Espa\u00f1ol)",
-    "panel_salida_placeholder": "La traducci\u00f3n aparecer\u00e1 aqu\u00ed...",
-    "slider_terminos_label": "T\u00e9rminos de contexto",
-    "slider_terminos_tooltip": "Controla cu\u00e1ntos t\u00e9rminos de Skyrim se buscan en la base de datos para dar contexto a la IA. M\u00e1s t\u00e9rminos = mejor precisi\u00f3n en nombres, pero traducci\u00f3n m\u00e1s lenta. Recomendado: 30 para textos normales, 50 para textos con muchos nombres propios.",
-    "selector_prompt_label": "Prompt de traducci\u00f3n",
-    "selector_prompt_refrescar": "Actualizar",
-    "descripcion_prompt_label": "Descripci\u00f3n del prompt",
-    "btn_traducir": "Traducir",
-    "btn_limpiar": "Limpiar",
-    "accordion_terminos_titulo": "T\u00e9rminos encontrados",
-    "accordion_terminos_label": "T\u00e9rminos relevantes",
-    "accordion_contexto_titulo": "Contexto enviado al modelo",
-    "accordion_contexto_label": "Contexto RAG completo",
-    "footer_flujo": "Flujo: ESP Translate \u2192 Copiar \u2192 Pegar aqu\u00ed \u2192 Traducir \u2192 Copiar resultado \u2192 Pegar en ESP Translate",
-    "prompts_seccion_descripcion": "**Gestiona tus prompts de traducci\u00f3n.** Crea prompts personalizados para diferentes tipos de texto (di\u00e1logos, libros, personajes espec\u00edficos, etc.). Los prompts se guardan autom\u00e1ticamente en `servidor_config/prompts/saved_prompts.json`.",
-    "prompts_lista_label": "Selecciona un prompt",
-    "prompts_lista_titulo": "Prompts guardados",
-    "prompts_cargar_btn": "Cargar para editar",
-    "prompts_duplicar_btn": "Duplicar",
-    "prompts_eliminar_btn": "Eliminar",
-    "prompts_nuevo_btn": "Nuevo prompt",
+    "titulo": "Agente de Traduccion Skyrim",
+    "subtitulo": "Traductor con contexto del juego usando IA local + terminologia oficial",
+    "tab_traducir": "Traducir", "tab_prompts": "Mis Prompts",
+    "panel_entrada_titulo": "Texto en Ingles", "panel_entrada_descripcion": "Pega aqui las lineas desde ESP Translate",
+    "panel_entrada_placeholder": "Pega aqui las lineas a traducir...",
+    "panel_salida_titulo": "Traduccion al Espanol", "panel_salida_descripcion": "Copia este texto y pegalo en ESP Translate",
+    "panel_salida_placeholder": "La traduccion aparecera aqui...",
+    "slider_terminos_label": "Terminos de contexto", "slider_terminos_tooltip": "Mas terminos = mejor precision, mas lento. Recomendado: 30.",
+    "slider_lineas_label": "Lineas por traduccion", "slider_lineas_tooltip": "Menos lineas = mejor calidad. Recomendado: 8.",
+    "selector_prompt_label": "Prompt de traduccion", "selector_prompt_refrescar": "Actualizar",
+    "descripcion_prompt_label": "Descripcion del prompt",
+    "btn_traducir": "Traducir", "btn_limpiar": "Limpiar",
+    "accordion_terminos_titulo": "Terminos encontrados", "accordion_terminos_label": "Terminos relevantes",
+    "accordion_contexto_titulo": "Contexto enviado al modelo", "accordion_contexto_label": "Contexto RAG completo",
+    "footer_flujo": "Flujo: ESP Translate -> Copiar -> Pegar aqui -> Traducir -> Copiar resultado -> Pegar en ESP Translate",
+    "footer_motor": "Motor: Ollama + ChromaDB + RAG | Modelo: {model} | Prompts: {count}",
+    "prompts_seccion_descripcion": "**Gestiona tus prompts de traduccion.**",
+    "prompts_lista_label": "Selecciona un prompt", "prompts_lista_titulo": "Prompts guardados",
+    "prompts_cargar_btn": "Cargar para editar", "prompts_duplicar_btn": "Duplicar",
+    "prompts_eliminar_btn": "Eliminar", "prompts_nuevo_btn": "Nuevo prompt",
     "prompts_editor_titulo": "Editor de prompt",
-    "prompts_nombre_label": "Nombre del prompt",
-    "prompts_nombre_placeholder": "Ej: Di\u00e1logo Argoniano",
-    "prompts_desc_label": "Descripci\u00f3n (para qu\u00e9 sirve)",
-    "prompts_desc_placeholder": "Ej: Traducci\u00f3n especial para di\u00e1logos de personajes Argonianos",
-    "prompts_contenido_label": "Contenido del prompt (system prompt)",
-    "prompts_contenido_placeholder": "Escribe aqu\u00ed las instrucciones que recibir\u00e1 la IA...",
-    "prompts_guardar_btn": "Guardar prompt",
-    "prompts_probar_btn": "Ir a Traducir para probar",
+    "prompts_nombre_label": "Nombre del prompt", "prompts_nombre_placeholder": "Ej: Dialogo Argoniano",
+    "prompts_desc_label": "Descripcion", "prompts_desc_placeholder": "Ej: Traduccion especial",
+    "prompts_contenido_label": "Contenido del prompt (system prompt)", "prompts_contenido_placeholder": "Escribe aqui las instrucciones...",
+    "prompts_guardar_btn": "Guardar prompt", "prompts_probar_btn": "Ir a Traducir para probar",
     "prompts_estado_label": "Estado",
-    "lineas_info_prefix": "L\u00edneas: ",
-    "caracteres_info_prefix": "Caracteres: ",
-    "traduccion_sin_texto": "No se ingres\u00f3 texto.",
+    "lineas_info_prefix": "Lineas: ", "caracteres_info_prefix": "Caracteres: ",
+    "traduccion_sin_texto": "No se ingreso texto.",
     "prompt_no_encontrado": "Prompt no encontrado",
     "prompt_nombre_vacio": "Escribe un nombre para el prompt",
-    "prompt_contenido_vacio": "El contenido del prompt no puede estar vac\u00edo",
-    "prompt_creado": "creado",
-    "prompt_actualizado": "actualizado",
-    "prompt_eliminado": "eliminado",
+    "prompt_contenido_vacio": "El contenido del prompt no puede estar vacio",
+    "prompt_creado": "creado", "prompt_actualizado": "actualizado", "prompt_eliminado": "eliminado",
     "prompt_no_default": "No se puede eliminar el prompt por defecto",
     "prompt_selecciona": "Selecciona un prompt para eliminar",
-    "prompt_nuevo_msg": "Escribe el nombre, descripci\u00f3n y contenido del nuevo prompt"
+    "prompt_nuevo_msg": "Escribe el nombre, descripcion y contenido del nuevo prompt",
+    "lang_label": "Idioma", "lang_name": "Espanol"
 }
 
 DEFAULT_CONFIG = {
@@ -149,7 +137,38 @@ DEFAULT_CONFIG = {
 }
 
 config = {**DEFAULT_CONFIG, **load_json_config(CONFIG_FILE, {})}
-S = {**DEFAULT_STRINGS, **load_json_config(STRINGS_FILE, {})}
+
+# --- NUEVO: Sistema multilenguaje ---
+# Detectar idiomas disponibles en la carpeta strings/
+def get_available_languages():
+    """Retorna dict {codigo: nombre} de idiomas disponibles en STRINGS_DIR."""
+    langs = {"es": "Espanol"}  # fallback siempre disponible
+    if STRINGS_DIR.exists():
+        for f in STRINGS_DIR.glob("*.json"):
+            code = f.stem  # es, en, ru, pt
+            try:
+                data = json.loads(f.read_text(encoding='utf-8'))
+                langs[code] = data.get("lang_name", code.upper())
+            except Exception:
+                langs[code] = code.upper()
+    return langs
+
+def load_language(lang_code):
+    """Carga strings del idioma especificado. Fallback a DEFAULT_STRINGS si no existe."""
+    if STRINGS_DIR.exists():
+        lang_file = STRINGS_DIR / f"{lang_code}.json"
+        if lang_file.exists():
+            try:
+                with open(lang_file, 'r', encoding='utf-8') as f:
+                    return {**DEFAULT_STRINGS, **json.load(f)}
+            except Exception as e:
+                print(f"[AVISO] Error cargando idioma {lang_code}: {e}")
+    # Fallback: archivo legacy o defaults
+    return {**DEFAULT_STRINGS, **load_json_config(STRINGS_FILE_LEGACY, {})}
+
+AVAILABLE_LANGS = get_available_languages()
+DEFAULT_LANG = "es"
+S = load_language(DEFAULT_LANG)
 
 
 # ============================================================
@@ -554,7 +573,79 @@ def create_interface():
     def on_go_translate(prompt_name):
         names = pm.get_names()
         target = prompt_name if prompt_name in names else (names[0] if names else None)
-        return gr.update(selected=0), gr.update(value=target)
+        # --- MODIFICADO: selected usa id string consistente con gr.Tabs ---
+        return gr.update(selected="tab_traducir"), gr.update(value=target)
+
+    # --- NUEVO: Funcion para cambiar idioma dinamicamente ---
+    def on_lang_change(lang_code):
+        global S
+        S = load_language(lang_code)
+        prompt_names_local = pm.get_names()
+        # Actualizar todos los componentes de la UI con los nuevos strings
+        return (
+            # 0: Header HTML
+            f'<div style="text-align: center; margin-bottom: 10px; background: {bg_t}; padding: 16px; border-radius: 8px;">'
+            f'<h1 style="margin:0; color: {tx_t}; font-family: {ft}; font-size: {fs};">{S.get("titulo")}</h1>'
+            f'<p style="margin:6px 0 0 0; color: #9ca3af; font-size: {fss};">{S.get("subtitulo")}</p>'
+            f'</div>',
+            # 1: Tab Traducir label
+            gr.update(label=S.get("tab_traducir")),
+            # 2: Input textbox label + placeholder
+            gr.update(label=f"{S.get('panel_entrada_titulo')} — {S.get('panel_entrada_descripcion')}",
+                      placeholder=S.get("panel_entrada_placeholder")),
+            # 3: Tooltip terminos HTML
+            f'<div class="tooltip-container"><span style="font-weight: 600; font-size: 13px;">{S.get("slider_terminos_label")}</span>'
+            f'<span class="tooltip-icon">?</span><span class="tooltip-text">{S.get("slider_terminos_tooltip")}</span></div>',
+            # 4: Tooltip lineas HTML
+            f'<div class="tooltip-container"><span style="font-weight: 600; font-size: 13px;">{S.get("slider_lineas_label")}</span>'
+            f'<span class="tooltip-icon">?</span><span class="tooltip-text">{S.get("slider_lineas_tooltip")}</span></div>',
+            # 5: Prompt selector label
+            gr.update(label=S.get("selector_prompt_label")),
+            # 6: Prompt refresh btn
+            gr.update(value=S.get("selector_prompt_refrescar")),
+            # 7: Prompt desc label
+            gr.update(label=S.get("descripcion_prompt_label")),
+            # 8: Translate button
+            gr.update(value=S.get("btn_traducir")),
+            # 9: Clear button
+            gr.update(value=S.get("btn_limpiar")),
+            # 10: Output textbox label + placeholder
+            gr.update(label=f"{S.get('panel_salida_titulo')} — {S.get('panel_salida_descripcion')}",
+                      placeholder=S.get("panel_salida_placeholder")),
+            # 11: Terms info label (dentro de accordion)
+            gr.update(label=S.get("accordion_terminos_label")),
+            # 12: Context info label (dentro de accordion)
+            gr.update(label=S.get("accordion_contexto_label")),
+            # 13: Tab Prompts label
+            gr.update(label=S.get("tab_prompts")),
+            # 14: Prompts markdown descripcion
+            S.get("prompts_seccion_descripcion"),
+            # 15: Prompts lista titulo
+            f"### {S.get('prompts_lista_titulo')}",
+            # 16: Prompts lista dropdown label
+            gr.update(label=S.get("prompts_lista_label")),
+            # 17-20: Prompt buttons
+            gr.update(value=S.get("prompts_cargar_btn")),
+            gr.update(value=S.get("prompts_duplicar_btn")),
+            gr.update(value=S.get("prompts_eliminar_btn")),
+            gr.update(value=S.get("prompts_nuevo_btn")),
+            # 21: Editor titulo
+            f"### {S.get('prompts_editor_titulo')}",
+            # 22-24: Editor fields
+            gr.update(label=S.get("prompts_nombre_label"), placeholder=S.get("prompts_nombre_placeholder")),
+            gr.update(label=S.get("prompts_desc_label"), placeholder=S.get("prompts_desc_placeholder")),
+            gr.update(label=S.get("prompts_contenido_label"), placeholder=S.get("prompts_contenido_placeholder")),
+            # 25: Status label
+            gr.update(label=S.get("prompts_estado_label")),
+            # 26-27: Save/Go buttons
+            gr.update(value=S.get("prompts_guardar_btn")),
+            gr.update(value=S.get("prompts_probar_btn")),
+            # 28: Footer HTML
+            f'<div style="text-align: center; font-size: 12px; color: #888; margin-top: 20px;">'
+            f'<p>{S.get("footer_flujo")}</p>'
+            f'<p>{S.get("footer_motor").format(model=OLLAMA_MODEL, count=len(prompt_names_local))}</p>'
+            f'</div>',
+        )
 
     # --- MODIFICADO: CSS compacto para layout de 3 columnas ---
     custom_css = """
@@ -573,8 +664,16 @@ def create_interface():
 
     with gr.Blocks(title=config.get("titulo_pagina", "Skyrim Translation Agent"), css=custom_css) as interface:
 
-        # Header
-        gr.HTML(f"""
+        # --- NUEVO: Selector de idioma + Header ---
+        with gr.Row():
+            lang_dropdown = gr.Dropdown(
+                choices=[(name, code) for code, name in AVAILABLE_LANGS.items()],
+                value=DEFAULT_LANG,
+                label=S.get("lang_label"), scale=1, min_width=150, allow_custom_value=False
+            )
+            gr.Column(scale=6)  # spacer
+
+        header_html = gr.HTML(f"""
         <div style="text-align: center; margin-bottom: 10px; background: {bg_t}; padding: 16px; border-radius: 8px;">
             <h1 style="margin:0; color: {tx_t}; font-family: {ft}; font-size: {fs};">{S.get('titulo')}</h1>
             <p style="margin:6px 0 0 0; color: #9ca3af; font-size: {fss};">{S.get('subtitulo')}</p>
@@ -582,12 +681,12 @@ def create_interface():
         """)
 
         # Tabs contenedor (con referencia para navegacion)
-        with gr.Tabs() as tabs:
+        # --- MODIFICADO: selected usa id string en vez de indice numerico (mas confiable en Gradio 6.x) ---
+        with gr.Tabs(selected="tab_traducir") as tabs:
 
             # ======== TAB 1: TRADUCIR ========
-            # --- MODIFICADO: Layout de 3 columnas para que todo quepa sin scroll ---
-            # Columna 1: Texto entrada | Columna 2: Controles compactos | Columna 3: Texto salida
-            with gr.Tab(S.get("tab_traducir")):
+            tab_traducir = gr.Tab(S.get("tab_traducir"), id="tab_traducir")
+            with tab_traducir:
                 with gr.Row(equal_height=True):
                     # ---- Columna 1: Entrada ----
                     with gr.Column(scale=5):
@@ -602,7 +701,7 @@ def create_interface():
                     with gr.Column(scale=3, elem_classes=["compact-controls"]):
                         # Slider de terminos de contexto
                         with gr.Row():
-                            gr.HTML(f"""
+                            tooltip_terminos = gr.HTML(f"""
                             <div class="tooltip-container">
                                 <span style="font-weight: 600; font-size: 13px;">{S.get('slider_terminos_label')}</span>
                                 <span class="tooltip-icon">?</span>
@@ -614,11 +713,11 @@ def create_interface():
 
                         # Slider de lineas por fragmento
                         with gr.Row():
-                            gr.HTML(f"""
+                            tooltip_lineas = gr.HTML(f"""
                             <div class="tooltip-container">
-                                <span style="font-weight: 600; font-size: 13px;">Lineas por traduccion</span>
+                                <span style="font-weight: 600; font-size: 13px;">{S.get('slider_lineas_label')}</span>
                                 <span class="tooltip-icon">?</span>
-                                <span class="tooltip-text">Texto largo se divide en fragmentos de este tamano. Menos lineas = mejor calidad (el modelo sigue el glosario), pero mas lento. Mas lineas = mas rapido, pero puede perder terminologia. Recomendado: 8 para precision, 15 para rapidez.</span>
+                                <span class="tooltip-text">{S.get('slider_lineas_tooltip')}</span>
                             </div>
                             """)
                         chunk_size = gr.Slider(minimum=3, maximum=20, value=DEFAULT_CHUNK_SIZE, step=1, label="")
@@ -659,12 +758,13 @@ def create_interface():
                     context_info = gr.Textbox(label=S.get("accordion_contexto_label"), lines=8)
 
             # ======== TAB 2: PROMPTS ========
-            with gr.Tab(S.get("tab_prompts")):
-                gr.Markdown(S.get("prompts_seccion_descripcion"))
+            tab_prompts = gr.Tab(S.get("tab_prompts"))
+            with tab_prompts:
+                prompts_desc_md = gr.Markdown(S.get("prompts_seccion_descripcion"))
 
                 with gr.Row():
                     with gr.Column(scale=1):
-                        gr.Markdown(f"### {S.get('prompts_lista_titulo')}")
+                        prompts_lista_titulo_md = gr.Markdown(f"### {S.get('prompts_lista_titulo')}")
                         prompt_list_dd = gr.Dropdown(
                             choices=prompt_names, value=def_pn,
                             label=S.get("prompts_lista_label"), allow_custom_value=False
@@ -677,26 +777,22 @@ def create_interface():
                         with gr.Row():
                             del_btn = gr.Button(S.get("prompts_eliminar_btn"), variant="stop", scale=1)
                             new_btn = gr.Button(S.get("prompts_nuevo_btn"), variant="secondary", scale=1)
-                        with gr.Column(scale=2):
-                            gr.Markdown(f"### {S.get('prompts_editor_titulo')}")
-                            save_btn = gr.Button(S.get("prompts_guardar_btn"), variant="primary", size="lg")
-                            go_btn = gr.Button(S.get("prompts_probar_btn"), variant="secondary", size="lg")
-                            ep_status = gr.Textbox(label=S.get("prompts_estado_label"), interactive=False, lines=1)
 
                     with gr.Column(scale=2):
-                        gr.Markdown(f"### {S.get('prompts_editor_titulo')}")
+                        prompts_editor_titulo_md = gr.Markdown(f"### {S.get('prompts_editor_titulo')}")
                         ep_name = gr.Textbox(label=S.get("prompts_nombre_label"), placeholder=S.get("prompts_nombre_placeholder"), lines=1)
                         ep_desc = gr.Textbox(label=S.get("prompts_desc_label"), placeholder=S.get("prompts_desc_placeholder"), lines=2)
                         ep_content = gr.Textbox(label=S.get("prompts_contenido_label"), placeholder=S.get("prompts_contenido_placeholder"), lines=15)
-                        
-                            
-                            
+                        ep_status = gr.Textbox(label=S.get("prompts_estado_label"), interactive=False, lines=1)
+                        with gr.Row(elem_classes=["center-buttons"]):
+                            save_btn = gr.Button(S.get("prompts_guardar_btn"), variant="primary", size="lg")
+                            go_btn = gr.Button(S.get("prompts_probar_btn"), variant="secondary", size="lg")
 
         # Footer
-        gr.HTML(f"""
+        footer_html = gr.HTML(f"""
         <div style="text-align: center; font-size: 12px; color: #888; margin-top: 20px;">
             <p>{S.get('footer_flujo')}</p>
-            <p>Motor: Ollama + ChromaDB + RAG | Modelo: {OLLAMA_MODEL} | Prompts: {len(prompt_names)}</p>
+            <p>{S.get('footer_motor').format(model=OLLAMA_MODEL, count=len(prompt_names))}</p>
         </div>
         """)
 
@@ -726,6 +822,41 @@ def create_interface():
         # Boton "Ir a Traducir" - navega al tab 0 y selecciona el prompt
         go_btn.click(fn=on_go_translate, inputs=[ep_name], outputs=[tabs, prompt_selector])
 
+        # ======== EVENTO - Cambio de idioma ========
+        # --- NUEVO: Al cambiar idioma, actualizar toda la UI ---
+        lang_outputs = [
+            header_html,              # 0: Header HTML
+            tab_traducir,             # 1: Tab Traducir label
+            input_text,               # 2: Input textbox label+placeholder
+            tooltip_terminos,         # 3: Tooltip terminos HTML
+            tooltip_lineas,           # 4: Tooltip lineas HTML
+            prompt_selector,          # 5: Prompt selector label
+            prompt_refresh_btn,       # 6: Refresh btn text
+            prompt_desc_display,      # 7: Prompt desc label
+            translate_btn,            # 8: Translate btn text
+            clear_btn,                # 9: Clear btn text
+            output_text,              # 10: Output textbox label+placeholder
+            terms_info,               # 11: Terms info label
+            context_info,             # 12: Context info label
+            tab_prompts,              # 13: Tab Prompts label
+            prompts_desc_md,          # 14: Prompts descripcion markdown
+            prompts_lista_titulo_md,  # 15: Lista titulo markdown
+            prompt_list_dd,           # 16: Lista dropdown label
+            load_edit_btn,            # 17: Cargar btn
+            dup_btn,                  # 18: Duplicar btn
+            del_btn,                  # 19: Eliminar btn
+            new_btn,                  # 20: Nuevo btn
+            prompts_editor_titulo_md, # 21: Editor titulo markdown
+            ep_name,                  # 22: Nombre label+placeholder
+            ep_desc,                  # 23: Desc label+placeholder
+            ep_content,               # 24: Contenido label+placeholder
+            ep_status,                # 25: Status label
+            save_btn,                 # 26: Guardar btn
+            go_btn,                   # 27: Probar btn
+            footer_html,              # 28: Footer HTML
+        ]
+        lang_dropdown.change(fn=on_lang_change, inputs=[lang_dropdown], outputs=lang_outputs)
+
     return interface
 
 
@@ -741,7 +872,8 @@ def main():
     print(f"\nModelo: {OLLAMA_MODEL}")
     print(f"BD:     {CHROMA_DIR}")
     print(f"Config: {CONFIG_FILE}")
-    print(f"Strings:{STRINGS_FILE}")
+    print(f"Strings dir: {STRINGS_DIR}")
+    print(f"Idiomas: {AVAILABLE_LANGS}")
     print(f"Puerto: {GRADIO_PORT}")
     print(f"\nhttp://localhost:{GRADIO_PORT}")
     print("=" * 60)
