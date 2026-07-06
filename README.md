@@ -1,5 +1,3 @@
-div align="center">
-
 # 🐉 Skyrim Traductor AI — Ollama
 
 ### Agente de traducción de mods de Skyrim con IA local y terminología oficial
@@ -110,16 +108,13 @@ El traductor incorpora un **selector de glosario** que permite elegir qué base 
 3. Al cambiar de glosario, el motor RAG recarga la conexión a la nueva base de datos **sin necesidad de reiniciar** el servidor.
 4. Las búsquedas posteriores se realizan contra el glosario seleccionado.
 
-**Ubicación de los glosarios:**
+**Ubicación del glosario:**
 
 ```
 BD/
 ├── chroma_db/                       ← Glosario por defecto (Skyrim ES)
-├── chroma_db_dawnguard/             ← Glosario con términos de Dawnguard
-├── chroma_db_hearthfire/            ← Glosario con términos de Hearthfire
-├── chroma_db_mod_personalizado/     ← Glosario de un mod específico
-└── ...
 ```
+Dentro se agregaran los glosarios de cada idioma.
 
 > ⚠️ **Importante**: Cada carpeta `chroma_db_*` debe ser una base ChromaDB válida generada con `3_iniciar_glosario.bat` apuntando al JSON correspondiente. No basta con copiar el JSON: debe indexarse en ChromaDB.
 
