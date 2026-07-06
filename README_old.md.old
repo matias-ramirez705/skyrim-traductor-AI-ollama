@@ -1,16 +1,15 @@
-div align="center">
+<div align="center">
 
 # 🐉 Skyrim Traductor AI — Ollama
 
 ### Agente de traducción de mods de Skyrim con IA local y terminología oficial
 
-**Traduce mods del inglés al español latino usando RAG + Ollama + ChromaDB con soporte multilenguaje**
+**Traduce mods del inglés al español latino usando RAG + Ollama + ChromaDB**
 
 [![Python 3.11.9](https://img.shields.io/badge/Python-3.11.9-3776AB?logo=python&logoColor=white)](https://www.python.org/downloads/release/python-3119/)
 [![Ollama](https://img.shields.io/badge/Ollama-0.30.0+-000000?logo=ollama&logoColor=white)](https://ollama.com/)
 [![Gradio](https://img.shields.io/badge/Gradio-6.x-FF7C00?logo=gradio&logoColor=white)](https://www.gradio.app/)
 [![ChromaDB](https://img.shields.io/badge/ChromaDB-1.0+-4285F4?logo=google&logoColor=white)](https://www.trychroma.com/)
-[![Multilenguaje](https://img.shields.io/badge/Multilenguaje-✓-9C27B0?logo=googletranslate&logoColor=white)](#-soporte-multilenguaje)
 [![License](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 
 </div>
@@ -21,7 +20,6 @@ div align="center">
 
 - [🤔 ¿Qué hace este proyecto?](#-qué-hace-este-proyecto)
 - [✨ Características](#-características)
-- [🌐 Soporte Multilenguaje](#-soporte-multilenguaje)
 - [🖥️ Interfaz del servidor de traducción](#interfaz-traduccion)
 - [🧩 Interfaz servidor del editor de JSON](#interfaz-editor-json)
 - [🖥️ Video de demostración](#video)
@@ -40,7 +38,7 @@ div align="center">
 
 ## 🤔 ¿Qué hace este proyecto?
 
-Este proyecto es un **agente de traducción automática** que traduce mods de Skyrim del **inglés al español latino**, respetando la terminología oficial del juego (nombres de lugares, NPCs, hechizos, facciones, etc.). Ahora además cuenta con **soporte multilenguaje**, lo que permite configurar tanto el idioma de la interfaz como el glosario (base de datos vectorial ChromaDB) utilizado para la búsqueda de términos.
+Este proyecto es un **agente de traducción automática** que traduce mods de Skyrim del **inglés al español latino**, respetando la terminología oficial del juego (nombres de lugares, NPCs, hechizos, facciones, etc.).
 
 ### ¿Cómo funciona?
 
@@ -49,11 +47,10 @@ Texto en inglés → Búsqueda de términos en ChromaDB (RAG) → Prompt con con
 ```
 
 1. 📥 Pegas el texto en inglés desde **ESP Translate**
-2. 🌐 Seleccionas el **idioma de la interfaz** y el **glosario ChromaDB** a utilizar
-3. 🔍 El sistema busca **términos oficiales** en la base de datos vectorial seleccionada (27,955 términos por defecto)
-4. 🧠 Construye un **prompt con contexto** de traducciones obligatorias
-5. 🤖 **Ollama** (modelo Qwen2.5 7B) traduce respetando la terminología
-6. 📤 Copias el resultado y lo pegas de vuelta en ESP Translate
+2. 🔍 El sistema busca **términos oficiales** en la base de datos vectorial (27,955 términos)
+3. 🧠 Construye un **prompt con contexto** de traducciones obligatorias
+4. 🤖 **Ollama** (modelo Qwen2.5 7B) traduce respetando la terminología
+5. 📤 Copias el resultado y lo pegas de vuelta en ESP Translate
 
 > **Todo funciona 100% en local** — no necesitas internet ni API keys. Tu PC es el servidor.
 
@@ -64,85 +61,12 @@ Texto en inglés → Búsqueda de términos en ChromaDB (RAG) → Prompt con con
 - 🏠 **100% local** — Sin APIs externas, sin costos, sin límites
 - 📚 **27,955 términos** del juego original (Skyrim + DLCs) en la base de datos
 - 🧠 **RAG (Retrieval-Augmented Generation)** — Busca terminología relevante antes de traducir
-- 🌐 **Soporte multilenguaje** — Interfaz traducida y glosarios intercambiables por idioma
 - 🎯 **3 prompts predefinidos** — Traducción general, Diálogo Khajiit, Libros y Notas
 - ✏️ **Editor de prompts** — Crea, edita y gestiona prompts personalizados
 - 📝 **Editor de glosario** — Agrega, modifica y elimina términos del glosario
 - 🎨 **Interfaz web** con Gradio — Tema configurable y contadores de líneas
 - 🔧 **Configuración visual** — Personaliza colores, fuentes y layout desde JSON
 - 📋 **Flujo integrado con ESP Translate** — Copiar y pegar directo
-- 🗂️ **Selector de glosario dinámico** — Cambia entre múltiples bases ChromaDB sin reiniciar el servidor
-
----
-
-## 🌐 Soporte Multilenguaje
-
-Una de las características principales de esta versión es el **soporte multilenguaje** implementado en todos los archivos del proyecto. Esto permite adaptar la herramienta a distintos idiomas tanto en la interfaz como en la búsqueda terminológica.
-
-### Idioma de la interfaz
-
-La interfaz web del traductor y del editor de glosario permite **seleccionar el idioma en el que se muestran los textos, etiquetas, botones y mensajes**. Los textos se cargan dinámicamente desde archivos de configuración (`servidor_config/strings_ui.json` y equivalentes para cada idioma), por lo que cambiar de idioma es instantáneo y no requiere reiniciar la aplicación.
-
-**Idiomas disponibles por defecto:**
-- 🇪🇸 Español (por defecto)
-- 🇬🇧 Inglés
-- 🇫🇷 Francés
-- 🇩🇪 Alemán
-- 🇮🇹 Italiano
-- 🇵🇹 Portugués
-- 🇷🇺 Ruso
-
-> 💡 Puedes agregar nuevos idiomas creando un archivo `strings_ui_<codigo>.json` en la carpeta `servidor_config/`. El sistema los detectará automáticamente y los añadirá al selector.
-
-### Selector de glosario (ChromaDB)
-
-El traductor incorpora un **selector de glosario** que permite elegir qué base de datos vectorial ChromaDB se utilizará para la búsqueda de términos (RAG). Esto resulta útil cuando se trabaja con:
-
-- Diferentes juegos o DLCs (ej: Skyrim base, Skyrim + Dawnguard, Skyrim + Hearthfire, etc.)
-- Glosarios personalizados con terminología de mods específicos
-- Traducciones a distintos idiomas destino (cada idioma con su propia base de términos)
-- Versiones paralelas del glosario para experimentación o comparación
-
-**Cómo funciona el selector:**
-
-1. Al iniciar el servidor, el sistema escanea la carpeta `BD/` en busca de bases ChromaDB válidas.
-2. Cada base detectada aparece en el desplegable **"Glosario de búsqueda"** dentro de la pestaña de traducción.
-3. Al cambiar de glosario, el motor RAG recarga la conexión a la nueva base de datos **sin necesidad de reiniciar** el servidor.
-4. Las búsquedas posteriores se realizan contra el glosario seleccionado.
-
-**Ubicación de los glosarios:**
-
-```
-BD/
-├── chroma_db/                       ← Glosario por defecto (Skyrim ES)
-├── chroma_db_dawnguard/             ← Glosario con términos de Dawnguard
-├── chroma_db_hearthfire/            ← Glosario con términos de Hearthfire
-├── chroma_db_mod_personalizado/     ← Glosario de un mod específico
-└── ...
-```
-
-> ⚠️ **Importante**: Cada carpeta `chroma_db_*` debe ser una base ChromaDB válida generada con `3_iniciar_glosario.bat` apuntando al JSON correspondiente. No basta con copiar el JSON: debe indexarse en ChromaDB.
-
-### Beneficios del soporte multilenguaje
-
-| Beneficio | Descripción |
-|---|---|
-| 🎯 **Flexibilidad** | Un mismo servidor puede traducir usando distintos glosarios sin reinstalar nada. |
-| 🌍 **Adaptabilidad** | La interfaz se adapta al idioma del usuario, facilitando el uso a traductores no hispanohablantes. |
-| 🔁 **Reutilización** | Los glosarios pueden compartirse entre proyectos o replicarse para distintos idiomas destino. |
-| 🧩 **Extensibilidad** | Agregar un nuevo idioma o glosario solo requiere añadir un archivo JSON o una carpeta ChromaDB. |
-| ⚡ **Productividad** | Cambiar de glosario en caliente evita tener que cerrar y reabrir el servidor entre proyectos. |
-
-### Flujo de uso multilenguaje
-
-```
-1. Inicia el servidor con 4_iniciar_servidor.bat
-2. En la pestaña "Traducir", despliega el selector de idioma de la interfaz
-3. Selecciona tu idioma preferido (los textos se actualizan al instante)
-4. Despliega el selector de glosario de búsqueda
-5. Elige el glosario ChromaDB que corresponda a tu mod/proyecto
-6. Pega el texto en inglés y traduce normalmente
-```
 
 ---
 
@@ -156,8 +80,6 @@ BD/
 <p align="center">
   <img src="Imagenes/interfaz traductor 3.png" width="60%">
 </p>
-
-> 🌐 **Novedad**: La interfaz ahora incluye selectores de **idioma de la interfaz** y de **glosario de búsqueda (ChromaDB)** en la parte superior de la pestaña de traducción.
 
 ---
 
@@ -291,8 +213,6 @@ Sigue estos pasos **en orden**. Solo necesitas hacerlos **una vez** la primera v
 
 > ✅ **El glosario ya está generado** — El archivo `skyrim_glossary_en_es.json` ya viene incluido en el repositorio con 27,955 términos. **NO necesitas ejecutar** `1_crear_glosario.bat` a menos que quieras regenerarlo desde los archivos `.strings` originales.
 
-> 🌐 **Soporte multilenguaje**: Si quieres cargar glosarios adicionales para otros idiomas o mods, coloca los JSON correspondientes en `BD/` y ejecuta `3_iniciar_glosario.bat` indicando el nombre de la base ChromaDB destino (por ejemplo `chroma_db_dawnguard`). Cada base aparecerá luego en el selector de glosario de la interfaz.
-
 ### Detalle de cada paso
 
 #### 1️⃣ Instalar dependencias
@@ -318,8 +238,6 @@ Esto lee `skyrim_glossary_en_es.json` y lo carga en ChromaDB (búsqueda vectoria
 
 ⏱️ Tarda ~1-2 minutos.
 
-> 💡 Para crear glosarios adicionales (otros idiomas o mods), copia el archivo `3_iniciar_glosario.bat` y modifica la variable que indica la ruta de salida de ChromaDB y el JSON de entrada. Así podrás generar múltiples bases intercambiables desde el selector.
-
 #### 3️⃣ Iniciar el servidor de traducción
 
 ```bash
@@ -329,10 +247,8 @@ Esto lee `skyrim_glossary_en_es.json` y lo carga en ChromaDB (búsqueda vectoria
 Esto:
 1. ✅ Verifica que Ollama esté corriendo (lo inicia si no está)
 2. ✅ Verifica que el modelo `qwen2.5:7b` esté disponible (lo descarga si falta)
-3. ✅ Escanea `BD/` en busca de glosarios ChromaDB disponibles
-4. ✅ Carga los idiomas de interfaz disponibles desde `servidor_config/`
-5. ✅ Inicia la interfaz web en **http://localhost:7860**
-6. ✅ Abre automáticamente tu navegador
+3. ✅ Inicia la interfaz web en **http://localhost:7860**
+4. ✅ Abre automáticamente tu navegador
 
 🌐 La interfaz web se abre en tu navegador. Para detener el servidor, cierra la ventana del CMD o presiona `Ctrl+C`.
 
@@ -359,30 +275,21 @@ skyrim-traductor-AI-ollama/
 │   ├── 0_crear_glosario.py               ← Parser de .strings → JSON
 │   ├── crear_glosario.py                 ← Alias del anterior
 │   ├── 1_cargar_glosario.py              ← JSON → ChromaDB
-│   ├── 2_servidor_traduccion.py          ← Servidor Gradio + RAG + multilenguaje
+│   ├── 2_servidor_traduccion.py          ← Servidor Gradio + RAG
 │   ├── 5_editor_glosario.py              ← Editor web de glosario
 │   ├── actualizar_glosario.py            ← Agrega términos nuevos
 │   └── limpiar_glosario.py              ← Limpia JSON corrupto
 │
 ├── ⚙️ servidor_config/                   ← Configuración
 │   ├── config_visual.json                ← Tema, colores, fuentes
-│   ├── strings_ui.json                   ← Textos de la interfaz (español, por defecto)
-│   ├── strings_ui_en.json                ← Textos de la interfaz (inglés)
-│   ├── strings_ui_fr.json                ← Textos de la interfaz (francés)
-│   ├── strings_ui_de.json                ← Textos de la interfaz (alemán)
-│   ├── strings_ui_it.json                ← Textos de la interfaz (italiano)
-│   ├── strings_ui_pt.json                ← Textos de la interfaz (portugués)
-│   ├── strings_ui_ru.json                ← Textos de la interfaz (ruso)
+│   ├── strings_ui.json                   ← Textos de la interfaz
 │   └── prompts/
 │       └── saved_prompts.json            ← Prompts guardados (se crea al usar)
 │
-├── 📚 BD/                                ← Base de datos y glosarios
+├── 📚 BD/                                ← Base de datos y glosario
 │   ├── skyrim_glossary_en_es.json        ← Glosario 27,955 términos ✅
 │   ├── palabras_agregadas.json           ← Términos manuales (opcional)
-│   ├── chroma_db/                        ← Base vectorial ChromaDB (por defecto)
-│   ├── chroma_db_dawnguard/              ← Base vectorial para Dawnguard (opcional)
-│   ├── chroma_db_hearthfire/             ← Base vectorial para Hearthfire (opcional)
-│   ├── chroma_db_<idioma>/               ← Bases vectoriales por idioma (opcional)
+│   ├── chroma_db/                        ← Base vectorial ChromaDB
 │   ├── 0 - English Original Strings/     ← Archivos .strings EN (opcional)
 │   └── 0 - Spanish Original Strings/     ← Archivos .strings ES (opcional)
 │
@@ -456,8 +363,6 @@ Lee `skyrim_glossary_en_es.json` y lo carga en ChromaDB para búsqueda semántic
 
 ⏱️ Tarda ~1-2 minutos. Solo ejecútalo la primera vez o cuando cambies el glosario.
 
-> 🌐 **Glosarios multilenguaje**: Para generar bases adicionales (otros idiomas, otros mods o variantes personalizadas), edita las rutas de entrada/salida dentro del `.bat` (o crea una copia del archivo) y apunta a un JSON distinto. La nueva carpeta `chroma_db_<nombre>/` aparecerá automáticamente en el selector de glosario del traductor.
-
 ---
 
 ### `4_iniciar_servidor.bat` — 🚀 Iniciar traductor (USO DIARIO)
@@ -467,10 +372,8 @@ El archivo principal. Inicia el servidor de traducción con interfaz web Gradio.
 **Qué hace automáticamente:**
 1. 🦙 Verifica que Ollama esté corriendo → Lo inicia si no está
 2. 🧠 Verifica que `qwen2.5:7b` esté disponible → Lo descarga si falta
-3. 🗂️ Escanea `BD/` y lista todas las bases ChromaDB disponibles para el selector de glosario
-4. 🌐 Carga los archivos de idioma disponibles en `servidor_config/strings_ui_*.json`
-5. 🌐 Inicia el servidor en `http://localhost:7860`
-6. 🖥️ Abre tu navegador automáticamente
+3. 🌐 Inicia el servidor en `http://localhost:7860`
+4. 🖥️ Abre tu navegador automáticamente
 
 ```bash
 4_iniciar_servidor.bat
@@ -508,8 +411,6 @@ Inicia una interfaz web para editar el glosario directamente desde el navegador.
 - ➕ Agregar términos (individual o en lote)
 - 🔍 Buscar y editar términos existentes
 - 📂 Ver archivos en la carpeta BD/
-- 🌐 Selector de idioma de la interfaz (multilenguaje)
-- 🗂️ Selector de glosario a editar (multilenguaje)
 - 🏷️ 18 categorías con colores (lugar, npc, magia, arma, etc.)
 - 📋 7 tipos (nombre, verbo, adjetivo, frase, diálogo, descripción, otro)
 
@@ -570,9 +471,8 @@ Lee el JSON del glosario y lo carga en una base de datos vectorial ChromaDB pers
 **Características:**
 - 📦 Inserción por lotes (5000 por batch)
 - 📝 Documentos almacenados como `"english | spanish"` para búsqueda bilingüe
-- 💾 Almacenamiento persistente en `BD/chroma_db/` (o en la ruta indicada para glosarios adicionales)
+- 💾 Almacenamiento persistente en `BD/chroma_db/`
 - 🧪 Búsquedas de prueba (Whiterun, Stormcloaks, dragon shout, etc.)
-- 🌐 Compatible con múltiples bases paralelas para soporte multilenguaje
 
 ---
 
@@ -580,18 +480,16 @@ Lee el JSON del glosario y lo carga en una base de datos vectorial ChromaDB pers
 
 **Ubicación**: `Codigo_py/2_servidor_traduccion.py` | **Ejecutado por**: `4_iniciar_servidor.bat`
 
-El corazón del proyecto. Interfaz web Gradio + motor RAG + Ollama + soporte multilenguaje.
+El corazón del proyecto. Interfaz web Gradio + motor RAG + Ollama.
 
 **Componentes principales:**
 
 | Componente | Descripción |
 |---|---|
-| 🔍 **Motor RAG** | Busca términos relevantes en el glosario ChromaDB seleccionado y construye contexto |
+| 🔍 **Motor RAG** | Busca términos relevantes en ChromaDB y construye contexto |
 | 🤖 **Traductor** | Envía prompt + contexto a Ollama para traducir |
 | 📝 **PromptManager** | CRUD de prompts personalizados |
 | 🎨 **Config visual** | Carga tema, colores y textos desde JSON |
-| 🌐 **Gestor de idiomas** | Carga dinámicamente los `strings_ui_<lang>.json` disponibles |
-| 🗂️ **Selector de glosario** | Lista y cambia entre bases ChromaDB en caliente |
 | 🖥️ **Interfaz Gradio** | Dos tabs: Traducir y Mis Prompts |
 
 **Configuración del motor:**
@@ -599,10 +497,6 @@ El corazón del proyecto. Interfaz web Gradio + motor RAG + Ollama + soporte mul
 - **Temperatura**: 0.1 (baja para traducción consistente)
 - **Búsqueda ChromaDB**: 80 resultados iniciales → filtrado a 30 mejores
 - **Puerto**: 7860
-
-**Selectores multilenguaje en la interfaz:**
-- 🌐 **Idioma de la interfaz**: dropdown con todos los `strings_ui_*.json` detectados
-- 🗂️ **Glosario de búsqueda**: dropdown con todas las carpetas `chroma_db*` detectadas en `BD/`
 
 **Prompts predefinidos:**
 1. 🎮 **Traducción Skyrim (por defecto)** — 12 reglas obligatorias con lista de no-traducir
@@ -615,14 +509,13 @@ El corazón del proyecto. Interfaz web Gradio + motor RAG + Ollama + soporte mul
 
 **Ubicación**: `Codigo_py/5_editor_glosario.py` | **Ejecutado por**: `6_iniciar_editor_glosario.bat`
 
-Interfaz web para editar el glosario JSON desde el navegador. Incluye selectores multilenguaje para editar cualquier glosario disponible.
+Interfaz web para editar el glosario JSON desde el navegador.
 
-**5 tabs:**
+**4 tabs:**
 - ➕ **Agregar líneas** — Individual o en lote
 - 👁️ **Vista previa** — Con syntax highlighting
 - 🔍 **Buscar y editar** — Búsqueda y edición de términos
 - 📂 **Archivos en BD** — Ver archivos de la carpeta BD
-- 🌐 **Idioma / Glosario** — Selección de idioma de interfaz y glosario activo
 
 **Categorías con colores:**
 
@@ -676,29 +569,9 @@ Personaliza la apariencia de la interfaz web:
 }
 ```
 
-### 📝 Textos de la interfaz — `servidor_config/strings_ui.json` (y variantes por idioma)
+### 📝 Textos de la interfaz — `servidor_config/strings_ui.json`
 
-Todos los textos, labels, tooltips y mensajes de la interfaz son configurables. El sistema multilenguaje carga automáticamente el archivo correspondiente al idioma seleccionado:
-
-| Archivo | Idioma | Estado |
-|---|---|---|
-| `strings_ui.json` | 🇪🇸 Español (por defecto) | ✅ Incluido |
-| `strings_ui_en.json` | 🇬🇧 Inglés | ✅ Incluido |
-| `strings_ui_fr.json` | 🇫🇷 Francés | ✅ Incluido |
-| `strings_ui_de.json` | 🇩🇪 Alemán | ✅ Incluido |
-| `strings_ui_it.json` | 🇮🇹 Italiano | ✅ Incluido |
-| `strings_ui_pt.json` | 🇵🇹 Portugués | ✅ Incluido |
-| `strings_ui_ru.json` | 🇷🇺 Ruso | ✅ Incluido |
-
-> 💡 Cada archivo contiene 60+ claves traducidas (labels, botones, tooltips, mensajes de error, etc.). Para agregar un nuevo idioma, copia `strings_ui.json` con el sufijo del nuevo código (ej: `strings_ui_ja.json` para japonés) y traduce los valores. El sistema lo detectará automáticamente al iniciar el servidor.
-
-### 🗂️ Glosarios disponibles — `BD/chroma_db*`
-
-El selector de glosario de la interfaz lista automáticamente todas las carpetas `chroma_db*` presentes en `BD/`. Para registrar una nueva base:
-
-1. Coloca el JSON del glosario en `BD/` (ej: `skyrim_glossary_en_fr.json` para francés).
-2. Ejecuta `3_iniciar_glosario.bat` (o una copia modificada) apuntando a una nueva carpeta de salida, por ejemplo `BD/chroma_db_fr/`.
-3. Reinicia el servidor si estaba corriendo. El nuevo glosario aparecerá en el selector.
+Todos los textos, labels, tooltips y mensajes de la interfaz son configurables. 60+ claves en español.
 
 ### 💬 Prompts guardados — `servidor_config/prompts/saved_prompts.json`
 
@@ -714,14 +587,12 @@ Los prompts personalizados se guardan automáticamente aquí. Se crea la primera
 1. Abre Ollama desde el Menú Inicio
 2. Ejecuta 4_iniciar_servidor.bat
 3. Se abre http://localhost:7860 en tu navegador
-4. (Opcional) Selecciona el idioma de la interfaz 🌐
-5. (Opcional) Selecciona el glosario de búsqueda 🗂️
-6. En ESP Translate, copia las líneas en inglés
-7. Pégalas en el panel izquierdo del traductor
-8. Selecciona el prompt deseado (general, Khajiit, libros)
-9. Presiona "Traducir"
-10. Copia el resultado del panel derecho
-11. Pégalo de vuelta en ESP Translate
+4. En ESP Translate, copia las líneas en inglés
+5. Pégalas en el panel izquierdo del traductor
+6. Selecciona el prompt deseado (general, Khajiit, libros)
+7. Presiona "Traducir"
+8. Copia el resultado del panel derecho
+9. Pégalo de vuelta en ESP Translate
 ```
 
 ### Flujo completo (primera vez)
@@ -737,26 +608,6 @@ Los prompts personalizados se guardan automáticamente aquí. Se crea la primera
 8. ¡Listo! 🎉
 ```
 
-### Flujo para agregar un nuevo idioma de interfaz
-
-```
-1. Copia servidor_config/strings_ui.json
-2. Renómbralo como strings_ui_<codigo>.json (ej: strings_ui_ja.json)
-3. Traduce los valores al nuevo idioma
-4. Reinicia 4_iniciar_servidor.bat
-5. Selecciona el nuevo idioma en el dropdown de la interfaz 🌐
-```
-
-### Flujo para agregar un nuevo glosario ChromaDB
-
-```
-1. Coloca el JSON del nuevo glosario en BD/
-2. (Opcional) Copia 3_iniciar_glosario.bat y modifica las rutas
-3. Ejecuta el .bat para indexar el JSON en una nueva carpeta chroma_db_<nombre>/
-4. Reinicia 4_iniciar_servidor.bat
-5. Selecciona el nuevo glosario en el dropdown 🗂️
-```
-
 ### Diagrama de datos
 
 ```
@@ -770,8 +621,8 @@ Los prompts personalizados se guardan automáticamente aquí. Se crea la primera
 ┌─────────────────┐     ┌──────────────────┐     ┌─────────────────┐
 │  Texto en       │────▶│  Motor RAG       │────▶│  Prompt +       │
 │  inglés         │     │  Busca términos  │     │  Contexto       │
-│  (de ESP        │     │  en el glosario  │     │                 │
-│   Translate)    │     │  seleccionado 🗂️ │     │                 │
+│  (de ESP        │     │  relevantes      │     │                 │
+│   Translate)    │     │                  │     │                 │
 └─────────────────┘     └──────────────────┘     └────────┬────────┘
                                                           │
                                                           ▼
@@ -788,9 +639,6 @@ Los prompts personalizados se guardan automáticamente aquí. Se crea la primera
                                                 │  (para ESP      │
                                                 │   Translate)    │
                                                 └─────────────────┘
-
-🌐 Idioma de la interfaz: cargado dinámicamente desde strings_ui_<lang>.json
-🗂️ Glosario activo: seleccionable en caliente desde BD/chroma_db*/
 ```
 
 ---
@@ -830,25 +678,6 @@ Sí. Edita `servidor_config/config_visual.json`:
 
 Reinicia el servidor para ver los cambios.
 
-### 🌐 ¿Cómo cambio el idioma de la interfaz?
-
-Desde la propia interfaz del traductor o del editor: usa el dropdown **"Idioma de la interfaz"** 🌐 ubicado en la parte superior. El cambio es instantáneo, no requiere reiniciar el servidor.
-
-Si quieres agregar un idioma nuevo:
-1. Copia `servidor_config/strings_ui.json` como `strings_ui_<codigo>.json`
-2. Traduce los valores
-3. Reinicia el servidor (solo la primera vez, para que detecte el nuevo archivo)
-4. Selecciona el idioma desde el dropdown
-
-### 🗂️ ¿Cómo cambio de glosario (ChromaDB)?
-
-Desde la interfaz del traductor: usa el dropdown **"Glosario de búsqueda"** 🗂️. Allí aparecerán todas las carpetas `chroma_db*` detectadas en `BD/`. Al seleccionar otra, el motor RAG reconectará con la nueva base en caliente.
-
-Para crear un glosario nuevo:
-1. Coloca el JSON en `BD/`
-2. Ejecuta `3_iniciar_glosario.bat` apuntando a una nueva carpeta de salida `BD/chroma_db_<nombre>/`
-3. Reinicia el servidor para que detecte la nueva carpeta
-
 ### 🌐 ¿Necesito internet?
 
 Solo para:
@@ -868,12 +697,10 @@ Solo para:
 | Componente | Espacio |
 |---|---|
 | Modelo Qwen2.5 7B | ~4.7 GB |
-| ChromaDB (por glosario) | ~500 MB |
+| ChromaDB | ~500 MB |
 | Dependencias Python | ~1.5 GB |
-| Glosario JSON (por idioma) | ~15 MB |
-| **Total (configuración base)** | **~7 GB** |
-
-> 💡 Cada glosario adicional suma ~500 MB (ChromaDB) + ~15 MB (JSON).
+| Glosario JSON | ~15 MB |
+| **Total** | **~7 GB** |
 
 ### 🔀 ¿Puedo tener el traductor y el editor abiertos a la vez?
 
@@ -893,18 +720,12 @@ Solo para:
 
 O simplemente reportar bugs o sugerir mejoras en los **Issues** del repositorio.
 
-**Áreas donde se agradecen contribuciones especiales:**
-- 🌐 Traducciones de la interfaz a nuevos idiomas (`strings_ui_<lang>.json`)
-- 🗂️ Glosarios especializados por DLC o mod
-- 🎨 Mejoras visuales y temas
-- 🐛 Reportes de bugs y correcciones
-
 ---
 
 <div align="center">
 
 ### 🐉 Hecho con ❤️ para la comunidad de traductores de mods de Skyrim
 
-**Motor**: Ollama + ChromaDB + RAG | **Modelo**: Qwen2.5 7B | **Interfaz**: Gradio | **Multilenguaje**: ✅
+**Motor**: Ollama + ChromaDB + RAG | **Modelo**: Qwen2.5 7B | **Interfaz**: Gradio
 
 </div>
