@@ -50,7 +50,7 @@ for path in possible_paths:
 
 # Rutas derivadas
 CHROMA_DIR = BASE_DIR / "BD" / "chroma_db"
-COLLECTION_NAME = "skyrim_terminology"
+COLLECTION_NAME = "skyrim_terminology"  # Legacy - ahora se detecta automaticamente
 
 PROMPTS_DIR = BASE_DIR / "servidor_config" / "prompts"
 CONFIG_FILE = BASE_DIR / "servidor_config" / "config_visual.json"
@@ -342,14 +342,59 @@ def check_dependencies():
 # ============================================================
 # MOTOR RAG
 # ============================================================
-def get_chromadb_collection():
+def detect_chromadb_collections():
+    """Detecta colecciones ChromaDB disponibles con info de idioma."""
+    import chromadb
+    if not CHROMA_DIR.exists():
+        return []
+    try:
+        client = chromadb.PersistentClient(path=str(CHROMA_DIR))
+        colls = client.list_collections()
+        result = []
+        for c in colls:
+            if c.name.startswith("skyrim_terminology"):
+                lang_code = c.name.replace("skyrim_terminology", "").lstrip("_") or "es"
+                meta = c.metadata or {}
+                tr_field = meta.get("translation_field", lang_code)
+                result.append({
+                    "name": c.name,
+                    "lang_code": lang_code,
+                    "translation_field": tr_field,
+                    "count": c.count(),
+                })
+        return result
+    except Exception as e:
+        print(f"[AVISO] Error detectando colecciones: {e}")
+        return []
+
+
+def get_chromadb_collection(collection_name=None):
     import chromadb
     if not os.path.exists(CHROMA_DIR):
         sys.exit(1)
-    client = chromadb.PersistentClient(path=CHROMA_DIR)
-    c = client.get_collection(COLLECTION_NAME)
-    print(f"ChromaDB: {c.count()} terminos")
-    return c
+    client = chromadb.PersistentClient(path=str(CHROMA_DIR))
+    name = collection_name or COLLECTION_NAME
+    # Intentar nombre exacto primero, luego legacy
+    try:
+        c = client.get_collection(name)
+        print(f"ChromaDB: {c.count()} terminos (coleccion: {name})")
+        return c
+    except Exception:
+        # Fallback a coleccion legacy sin sufijo de idioma
+        try:
+            c = client.get_collection(COLLECTION_NAME)
+            print(f"ChromaDB: {c.count()} terminos (coleccion legacy: {COLLECTION_NAME})")
+            return c
+        except Exception:
+            # Si no existe ninguna, listar las disponibles
+            colls = client.list_collections()
+            skyrim_colls = [cl.name for cl in colls if cl.name.startswith("skyrim_terminology")]
+            if skyrim_colls:
+                print(f"[ERROR] Coleccion '{name}' no encontrada. Disponibles: {skyrim_colls}")
+            else:
+                print(f"[ERROR] No se encontraron colecciones skyrim_terminology en ChromaDB.")
+                print("Ejecuta primero: 3_iniciar_glosario.bat")
+            sys.exit(1)
 
 
 def normalize_text(text):
@@ -358,7 +403,20 @@ def normalize_text(text):
     return re.sub(r'\s+', ' ', re.sub(r'[^\w\s]', '', text.lower().strip()))
 
 
-def search_terms(collection, text, n_results=CHROMA_SEARCH_LIMIT):
+def _detect_translation_field_from_collection(collection):
+    """Detecta el campo de traduccion desde la metadata de la coleccion."""
+    try:
+        meta = collection.metadata or {}
+        return meta.get("translation_field", "spanish")
+    except:
+        return "spanish"
+
+
+def search_terms(collection, text, n_results=CHROMA_SEARCH_LIMIT, translation_field=None):
+    # Detectar campo de traduccion si no se especifica
+    if translation_field is None:
+        translation_field = _detect_translation_field_from_collection(collection)
+
     results = collection.query(query_texts=[text], n_results=n_results)
     all_terms = []
     if results and results.get('metadatas') and results['metadatas']:
@@ -368,15 +426,20 @@ def search_terms(collection, text, n_results=CHROMA_SEARCH_LIMIT):
                     en = meta.get("english", "").strip()
                     if not en:
                         continue
-                    all_terms.append({"english": en, "spanish": meta.get("spanish", "").strip(),
+                    tr = meta.get(translation_field, "").strip()
+                    # Fallback: si no hay traduccion con el campo detectado, buscar "spanish" (legacy)
+                    if not tr and translation_field != "spanish":
+                        tr = meta.get("spanish", "").strip()
+                    all_terms.append({"english": en, translation_field: tr,
                                       "category": meta.get("category", ""),
-                                      "en_norm": normalize_text(en), "es_norm": normalize_text(meta.get("spanish", ""))})
+                                      "en_norm": normalize_text(en), "tr_norm": normalize_text(tr)})
 
-    filtered = [t for t in all_terms if t["en_norm"] and t["en_norm"] != t["es_norm"]]
+    filtered = [t for t in all_terms if t["en_norm"] and t["en_norm"] != t["tr_norm"]]
     unique = {}
     for t in filtered:
         k = t["en_norm"]
-        if k not in unique or (len(t["english"]) < len(unique[k]["english"]) and t["spanish"]):
+        tr_val = t.get(translation_field, "")
+        if k not in unique or (len(t["english"]) < len(unique[k]["english"]) and tr_val):
             unique[k] = t
 
     short = [t for t in unique.values() if len(t["english"].split()) <= 5]
@@ -388,7 +451,7 @@ def search_terms(collection, text, n_results=CHROMA_SEARCH_LIMIT):
     return final
 
 
-def build_context(terms):
+def build_context(terms, translation_field="spanish"):
     if not terms:
         return "CONTEXTO: No se encontraron terminos."
     short = [t for t in terms if len(t["english"].split()) <= 5]
@@ -397,8 +460,9 @@ def build_context(terms):
     if short:
         parts += ["TRADUCCIONES OBLIGATORIAS (usa EXACTAMENTE estas):", "=" * 55]
         for t in short:
-            en, es = t["english"], t["spanish"]
-            parts.append(f"  {en} -> {es}  [NO TRADUCIR]" if es and normalize_text(en) == normalize_text(es) else f"  {en} -> {es}")
+            en = t["english"]
+            tr = t.get(translation_field, t.get("spanish", ""))
+            parts.append(f"  {en} -> {tr}  [NO TRADUCIR]" if tr and normalize_text(en) == normalize_text(tr) else f"  {en} -> {tr}")
         parts += ["=" * 55, ""]
     if long:
         parts += ["ORACIONES DE REFERENCIA:", "-" * 55]
@@ -408,7 +472,9 @@ def build_context(terms):
         for cat, cts in sorted(cats.items()):
             parts.append(f"[{cat.upper()}]")
             for t in cts[:3]:
-                parts.append(f"  {t['english']} -> {t['spanish']}")
+                en = t['english']
+                tr = t.get(translation_field, t.get('spanish', ''))
+                parts.append(f"  {en} -> {tr}")
         parts.append("-" * 55)
     parts += ["", "REGLA: Si un nombre aparece en TRADUCCIONES OBLIGATORIAS, usa ESA traduccion en TODO el texto."]
     return "\n".join(parts)
@@ -448,7 +514,23 @@ def get_ollama_models():
 # INTERFAZ
 # ============================================================
 def create_interface():
-    collection = get_chromadb_collection()
+    # Detectar colecciones disponibles
+    available_colls = detect_chromadb_collections()
+    # Seleccionar la coleccion por defecto: la de "es" si existe, sino la primera
+    default_coll_name = COLLECTION_NAME
+    default_tr_field = "spanish"
+    if available_colls:
+        es_coll = [c for c in available_colls if c["lang_code"] == "es"]
+        if es_coll:
+            default_coll_name = es_coll[0]["name"]
+            default_tr_field = es_coll[0]["translation_field"]
+        else:
+            default_coll_name = available_colls[0]["name"]
+            default_tr_field = available_colls[0]["translation_field"]
+
+    collection = get_chromadb_collection(default_coll_name)
+    # Actualizar translation_field con el de la coleccion seleccionada
+    _translation_field = _detect_translation_field_from_collection(collection)
     try:
         models = get_ollama_models()
         print(f"Modelos: {models}")
@@ -484,13 +566,15 @@ def create_interface():
         return line_counter(t, S.get("lineas_info_prefix", "Líneas: "), S.get("caracteres_info_prefix", "Caracteres: "))
 
     # --- MODIFICADO: Se agrego parametro chunk_size para traduccion por fragmentos ---
+    # translation_field ya se detecto arriba desde la coleccion
+
     def do_translate(input_text, num_terms, prompt_name, chunk_size):
         if not input_text or not input_text.strip():
             return "", S.get("traduccion_sin_texto", "No se ingresó texto."), "", ""
         try:
             sp = pm.get_content(prompt_name) or DEFAULT_PROMPT["content"]
-            terms = search_terms(collection, input_text, n_results=max(int(num_terms) * 3, CHROMA_SEARCH_LIMIT))
-            ctx = build_context(terms)
+            terms = search_terms(collection, input_text, n_results=max(int(num_terms) * 3, CHROMA_SEARCH_LIMIT), translation_field=_translation_field)
+            ctx = build_context(terms, translation_field=_translation_field)
 
             # --- NUEVO: Traduccion por fragmentos (chunking) ---
             # Si el texto tiene mas lineas que chunk_size, se divide en fragmentos
@@ -529,8 +613,9 @@ def create_interface():
             td = f"Clave: {sc} | Referencia: {lc} | Prompt: {prompt_name}{chunk_info}\n\nTRADUCCIONES OBLIGATORIAS:\n"
             for t in terms:
                 if len(t["english"].split()) <= 5:
-                    en, es = t["english"], t["spanish"]
-                    td += f"  {en} -> {es}\n" if es and normalize_text(en) != normalize_text(es) else f"  {en} [no traducir]\n"
+                    en = t["english"]
+                    tr = t.get(_translation_field, t.get("spanish", ""))
+                    td += f"  {en} -> {tr}\n" if tr and normalize_text(en) != normalize_text(tr) else f"  {en} [no traducir]\n"
             if lc:
                 td += f"\nReferencia: {lc} (ver contexto)"
             return trans, td, ctx, on_output_change(trans)
@@ -664,14 +749,21 @@ def create_interface():
 
     with gr.Blocks(title=config.get("titulo_pagina", "Skyrim Translation Agent"), css=custom_css) as interface:
 
-        # --- NUEVO: Selector de idioma + Header ---
+        # --- NUEVO: Selector de idioma + Selector de glosario + Header ---
         with gr.Row():
             lang_dropdown = gr.Dropdown(
                 choices=[(name, code) for code, name in AVAILABLE_LANGS.items()],
                 value=DEFAULT_LANG,
                 label=S.get("lang_label"), scale=1, min_width=150, allow_custom_value=False
             )
-            gr.Column(scale=6)  # spacer
+            # Selector de glosario/coleccion ChromaDB
+            glossary_choices = [(f"{c['name']} ({c['count']} terms, {c['translation_field']})", c['name']) for c in available_colls] if available_colls else [(COLLECTION_NAME, COLLECTION_NAME)]
+            glossary_dropdown = gr.Dropdown(
+                choices=glossary_choices,
+                value=default_coll_name,
+                label="Glossary / Glosario", scale=1, min_width=200, allow_custom_value=False
+            )
+            gr.Column(scale=4)  # spacer
 
         header_html = gr.HTML(f"""
         <div style="text-align: center; margin-bottom: 10px; background: {bg_t}; padding: 16px; border-radius: 8px;">
@@ -810,6 +902,20 @@ def create_interface():
         output_text.change(fn=on_output_change, inputs=[output_text], outputs=[output_counter])
         prompt_selector.change(fn=on_prompt_sel, inputs=[prompt_selector], outputs=[prompt_desc_display])
         prompt_refresh_btn.click(fn=lambda: refresh_list(), inputs=[], outputs=[prompt_selector])
+
+        # ======== EVENTO - Cambio de glosario ========
+        def on_glossary_change(coll_name):
+            nonlocal collection, _translation_field
+            if coll_name:
+                try:
+                    collection = get_chromadb_collection(coll_name)
+                    _translation_field = _detect_translation_field_from_collection(collection)
+                    return f"Coleccion cambiada: {coll_name} ({collection.count()} terminos, campo: {_translation_field})"
+                except Exception as e:
+                    return f"Error al cambiar coleccion: {e}"
+            return "Sin cambio"
+
+        glossary_dropdown.change(fn=on_glossary_change, inputs=[glossary_dropdown], outputs=[terms_info])
 
         # ======== EVENTOS - Prompts ========
         prompt_list_dd.change(fn=on_list_change, inputs=[prompt_list_dd], outputs=[prompt_list_info])
