@@ -109,6 +109,8 @@ class GlossaryState:
         self.selected_index = -1
         # --- NUEVO: indices de la ultima busqueda para mapear fila visible -> entrada real ---
         self.filtered_indices = []  # Lista de indices reales en state.entries
+        # --- NUEVO: campo de traduccion dinamico (se detecta al cargar JSON) ---
+        self.translation_field = "spanish"  # Valor por defecto para compatibilidad
 
     def reset(self):
         self.entries = []
@@ -117,11 +119,12 @@ class GlossaryState:
         self.modified = False
         self.selected_index = -1
         self.filtered_indices = []  # --- NUEVO ---
+        # NO reseteamos translation_field para mantenerlo entre operaciones
 
-    def add_entry(self, english, spanish, category="general", entry_type="", source="manual"):
+    def add_entry(self, english, translation, category="general", entry_type="", source="manual"):
         entry = {
             "english": english.strip(),
-            "spanish": spanish.strip(),
+            self.translation_field: translation.strip(),
             "category": category or "general",
             "type": entry_type or "",
             "source": source or "manual"
@@ -130,11 +133,11 @@ class GlossaryState:
         self.modified = True
         return len(self.entries) - 1
 
-    def update_entry(self, index, english, spanish, category, entry_type, source):
+    def update_entry(self, index, english, translation, category, entry_type, source):
         if 0 <= index < len(self.entries):
             self.entries[index] = {
                 "english": english.strip(),
-                "spanish": spanish.strip(),
+                self.translation_field: translation.strip(),
                 "category": category or "general",
                 "type": entry_type or "",
                 "source": source or "manual"
@@ -161,16 +164,34 @@ class GlossaryState:
             return index + 1
         return index
 
+    def _detect_translation_field(self, entries):
+        """Detecta el campo de traduccion buscando el primer campo que no sea
+        english, category, type, o source."""
+        if not entries:
+            return "spanish"  # fallback por defecto
+        first_entry = entries[0]
+        known_fields = {"english", "category", "type", "source"}
+        for key in first_entry.keys():
+            if key not in known_fields:
+                return key
+        return "spanish"  # fallback por defecto
+
     def load_from_json(self, filepath):
         with open(filepath, 'r', encoding='utf-8') as f:
             data = json.load(f)
         if isinstance(data, list):
             self.entries = data
         elif isinstance(data, dict):
-            self.entries = []
-            for key, value in data.items():
-                if isinstance(value, list):
-                    self.entries.extend(value)
+            # Formato con metadata (compatibilidad hacia atras)
+            if "entries" in data:
+                self.entries = data["entries"]
+            else:
+                self.entries = []
+                for key, value in data.items():
+                    if isinstance(value, list):
+                        self.entries.extend(value)
+        # Detectar el campo de traduccion automaticamente
+        self.translation_field = self._detect_translation_field(self.entries)
         self.filename = os.path.basename(filepath)
         self.filepath = filepath
         self.modified = False
@@ -194,7 +215,7 @@ class GlossaryState:
         results = []
         for i, entry in enumerate(self.entries):
             if (query_lower in entry.get("english", "").lower() or
-                query_lower in entry.get("spanish", "").lower() or
+                query_lower in entry.get(self.translation_field, "").lower() or
                 query_lower in entry.get("category", "").lower()):
                 results.append(i)
         return results
@@ -214,7 +235,7 @@ def render_line_preview(entries, highlight_idx=-1):
     html_parts = ['<div style="font-family: Consolas, monospace; font-size: 14px; background: #1e1e1e; border-radius: 8px; padding: 12px; color: #d4d4d4; max-height: 600px; overflow-y: auto;">']
     for i, entry in enumerate(entries):
         en_text = entry.get("english", "").replace("<", "&lt;").replace(">", "&gt;")
-        es_text = entry.get("spanish", "").replace("<", "&lt;").replace(">", "&gt;")
+        tr_text = entry.get(state.translation_field, "").replace("<", "&lt;").replace(">", "&gt;")
         cat = entry.get("category", "")
         bg = " background:#3a3a2a;" if i == highlight_idx else ""
         cat_color = CATEGORY_COLORS.get(cat, "#608b4e")
@@ -222,7 +243,7 @@ def render_line_preview(entries, highlight_idx=-1):
                           f'<span style="color:#858585; min-width:40px; text-align:right; padding-right:12px; user-select:none;">{i+1}</span>'
                           f'<span style="color:#9cdcfe; flex:1; padding-right:20px; word-break:break-word;">{en_text}</span>'
                           f'<span style="color:#569cd6; padding:0 8px; user-select:none;">&rarr;</span>'
-                          f'<span style="color:#ce9178; flex:1; word-break:break-word;">{es_text}</span>'
+                          f'<span style="color:#ce9178; flex:1; word-break:break-word;">{tr_text}</span>'
                           f'<span style="color:{cat_color}; font-size:11px; padding-left:10px; min-width:70px; text-align:right;">[{cat}]</span>'
                           f'</div>')
     html_parts.append('</div>')
@@ -264,19 +285,48 @@ def new_glossary(filename):
             None, "", "", CATEGORIES[0], TYPES[0], "manual", -1, state.filename or "")
 
 
+def _translation_field_label():
+    """Retorna un nombre visible para el campo de traduccion actual."""
+    field = state.translation_field
+    # Capitalizar primera letra, reemplazar underscores por espacios
+    return field.replace("_", " ").title()
+
+
 def load_json_file(file_obj):
+    """Carga un JSON y actualiza la UI incluyendo labels del campo de traduccion."""
+    # Valores por defecto para los labels de traduccion
+    tr_label = _translation_field_label()
+    default_labels = (
+        gr.update(label=tr_label),           # edit_es label
+        gr.update(label=tr_label),           # single_es label
+        gr.update(value=f"### {tr_label}"),  # agregar_esp_titulo_md
+    )
+
     if file_obj is None:
         return (render_line_preview(state.entries), render_stats(state.entries),
-                "No se selecciono ningun archivo", None, "", "", CATEGORIES[0], TYPES[0], "manual", -1, state.filename or "")
+                "No se selecciono ningun archivo", None, "", "", CATEGORIES[0], TYPES[0], "manual", -1, state.filename or "",
+                *default_labels)
+
     filepath = file_obj.name if hasattr(file_obj, 'name') else str(file_obj)
     try:
         count = state.load_from_json(filepath)
-        state.filtered_indices = []  # --- NUEVO: limpiar busqueda al cargar nuevo archivo ---
+        state.filtered_indices = []
+        tr_label = _translation_field_label()
+
+        # Generar headers dinamicos para el Dataframe
+        tabla_headers = f"#|English|{tr_label}|Category|Type|Source"
+
         return (render_line_preview(state.entries), render_stats(state.entries),
-                f"Cargado: {state.filename} ({count} entradas)", None, "", "", CATEGORIES[0], TYPES[0], "manual", -1, state.filename or "")
+                f"Cargado: {state.filename} ({count} entradas, campo: {state.translation_field})",
+                None, "", "", CATEGORIES[0], TYPES[0], "manual", -1, state.filename or "",
+                gr.update(label=tr_label),                   # edit_es label
+                gr.update(label=tr_label),                   # single_es label
+                gr.update(value=f"### {tr_label}"),         # agregar_esp_titulo_md
+                )
     except Exception as e:
         return (render_line_preview(state.entries), render_stats(state.entries),
-                f"Error al cargar: {str(e)}", None, "", "", CATEGORIES[0], TYPES[0], "manual", -1, state.filename or "")
+                f"Error al cargar: {str(e)}", None, "", "", CATEGORIES[0], TYPES[0], "manual", -1, state.filename or "",
+                *default_labels)
 
 
 def save_json_file(filename):
@@ -336,7 +386,7 @@ def search_entries(query):
         return None, f"No se encontraron resultados para '{query}'"
     # --- MODIFICADO: guardar indices reales para que on_table_select los use ---
     state.filtered_indices = indices
-    table_data = [[idx+1, state.entries[idx].get("english",""), state.entries[idx].get("spanish",""),
+    table_data = [[idx+1, state.entries[idx].get("english",""), state.entries[idx].get(state.translation_field,""),
                     state.entries[idx].get("category","general"), state.entries[idx].get("type",""),
                     state.entries[idx].get("source","manual")] for idx in indices]
     return table_data, f"Encontradas {len(table_data)} entradas"
@@ -357,7 +407,7 @@ def on_table_select(evt: gr.SelectData):
         if state.entries and 0 <= real_index < len(state.entries):
             entry = state.entries[real_index]
             state.selected_index = real_index
-            return (entry.get("english",""), entry.get("spanish",""),
+            return (entry.get("english",""), entry.get(state.translation_field,""),
                     entry.get("category","general") or CATEGORIES[0],
                     entry.get("type","") or TYPES[0],
                     entry.get("source","manual"), real_index)
@@ -457,12 +507,13 @@ def create_interface():
             gr.update(value=S.get("btn_ver_todas")),
             # 10: Search status label
             gr.update(label=S.get("resultado_label")),
-            # 11: Search results Dataframe label
-            gr.update(label=S.get("tabla_label")),
+            # 11: Search results Dataframe (label + headers dinamicos)
+            gr.update(label=S.get("tabla_label"),
+                      headers=f"#|English|{_translation_field_label()}|Category|Type|Source".split("|")),
             # 12: Edit en
             gr.update(label=S.get("edit_ingles"), placeholder=S.get("edit_placeholder")),
-            # 13: Edit es
-            gr.update(label=S.get("edit_espanol"), placeholder="..."),
+            # 13: Edit es (usa translation_field dinamico)
+            gr.update(label=_translation_field_label(), placeholder="..."),
             # 14: Edit cat
             gr.update(label=S.get("edit_categoria")),
             # 15: Edit type
@@ -487,8 +538,8 @@ def create_interface():
             gr.update(value=f"### {S.get('agregar_ingles_titulo')}"),
             # 25: En textarea placeholder
             gr.update(placeholder=S.get("agregar_ingles_placeholder")),
-            # 26: Agregar espanol titulo markdown
-            gr.update(value=f"### {S.get('agregar_espanol_titulo')}"),
+            # 26: Agregar espanol titulo markdown (usa translation_field dinamico)
+            gr.update(value=f"### {_translation_field_label()}"),
             # 27: Es textarea placeholder
             gr.update(placeholder=S.get("agregar_espanol_placeholder")),
             # 28: Cat dropdown label
@@ -501,8 +552,8 @@ def create_interface():
             gr.update(value=f"### {S.get('agregar_single_titulo')}"),
             # 32: Single en
             gr.update(label=S.get("single_ingles"), placeholder=S.get("single_ingles_placeholder")),
-            # 33: Single es
-            gr.update(label=S.get("single_espanol"), placeholder=S.get("single_espanol_placeholder")),
+            # 33: Single es (usa translation_field dinamico)
+            gr.update(label=_translation_field_label(), placeholder=S.get("single_espanol_placeholder")),
             # 34: Single cat
             gr.update(label=S.get("edit_categoria")),
             # 35: Single type
@@ -562,7 +613,7 @@ def create_interface():
 
                 search_status = gr.Textbox(label=S.get("resultado_label"), value="", interactive=False)
                 search_results = gr.Dataframe(
-                    headers=S.get("tabla_headers").split("|"),
+                    headers=["#", "English", _translation_field_label(), "Category", "Type", "Source"],
                     label=S.get("tabla_label"),
                     interactive=False, wrap=True
                 )
@@ -572,7 +623,7 @@ def create_interface():
                         edit_index_hidden = gr.Number(value=-1, visible=False, precision=0)
                         with gr.Row():
                             edit_en = gr.Textbox(label=S.get("edit_ingles"), placeholder=S.get("edit_placeholder"), scale=1)
-                            edit_es = gr.Textbox(label=S.get("edit_espanol"), placeholder="...", scale=1)
+                            edit_es = gr.Textbox(label=_translation_field_label(), placeholder="...", scale=1)
                         with gr.Row():
                             edit_cat = gr.Dropdown(choices=CATEGORIES, value=CATEGORIES[0], label=S.get("edit_categoria"), scale=1)
                             edit_type = gr.Dropdown(choices=TYPES, value=TYPES[0], label=S.get("edit_tipo"), scale=1)
@@ -593,7 +644,7 @@ def create_interface():
                         agregar_ing_titulo_md = gr.Markdown(f"### {S.get('agregar_ingles_titulo')}")
                         en_textarea = gr.Textbox(label="", placeholder=S.get("agregar_ingles_placeholder"), lines=8)
                     with gr.Column(scale=1):
-                        agregar_esp_titulo_md = gr.Markdown(f"### {S.get('agregar_espanol_titulo')}")
+                        agregar_esp_titulo_md = gr.Markdown(f"### {_translation_field_label()}")
                         es_textarea = gr.Textbox(label="", placeholder=S.get("agregar_espanol_placeholder"), lines=8)
                 with gr.Row():
                     cat_dropdown = gr.Dropdown(choices=CATEGORIES, value=CATEGORIES[0], label=S.get("agregar_categoria_label"), scale=1)
@@ -604,7 +655,7 @@ def create_interface():
                 single_titulo_md = gr.Markdown(f"### {S.get('agregar_single_titulo')}")
                 with gr.Row():
                     single_en = gr.Textbox(label=S.get("single_ingles"), placeholder=S.get("single_ingles_placeholder"), scale=2)
-                    single_es = gr.Textbox(label=S.get("single_espanol"), placeholder=S.get("single_espanol_placeholder"), scale=2)
+                    single_es = gr.Textbox(label=_translation_field_label(), placeholder=S.get("single_espanol_placeholder"), scale=2)
                     single_cat = gr.Dropdown(choices=CATEGORIES, value=CATEGORIES[0], label=S.get("edit_categoria"), scale=1)
                     single_type = gr.Dropdown(choices=TYPES, value=TYPES[0], label=S.get("edit_tipo"), scale=1)
                     single_source = gr.Textbox(label=S.get("edit_fuente"), value="manual", scale=1)
@@ -630,7 +681,8 @@ def create_interface():
 
         load_btn.upload(fn=load_json_file, inputs=[load_btn],
                         outputs=[preview_html, stats_html, status_text, search_results,
-                                 edit_en, edit_es, edit_cat, edit_type, edit_source, edit_index_hidden, filename_input])
+                                 edit_en, edit_es, edit_cat, edit_type, edit_source, edit_index_hidden, filename_input,
+                                 edit_es, single_es, agregar_esp_titulo_md])
 
         save_btn.click(fn=save_json_file, inputs=[filename_input],
                        outputs=[preview_html, stats_html, status_text, filename_input])
