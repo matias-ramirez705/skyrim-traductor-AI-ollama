@@ -39,6 +39,46 @@ else:
 BD_DIR = os.path.join(BASE_DIR, "BD")
 GRADIO_PORT = 7861
 
+# --- NUEVO: Ruta de strings multilenguaje para el editor ---
+STRINGS_DIR = os.path.join(BASE_DIR, "editor_config", "strings")
+
+# --- NUEVO: Sistema multilenguaje ---
+def get_available_languages():
+    """Retorna dict {codigo: nombre} de idiomas disponibles."""
+    langs = {"es": "Español"}
+    if os.path.exists(STRINGS_DIR):
+        for fname in os.listdir(STRINGS_DIR):
+            if fname.endswith('.json'):
+                code = fname[:-5]
+                try:
+                    with open(os.path.join(STRINGS_DIR, fname), 'r', encoding='utf-8') as f:
+                        data = json.load(f)
+                        langs[code] = data.get("lang_name", code.upper())
+                except Exception:
+                    langs[code] = code.upper()
+    return langs
+
+def load_language(lang_code):
+    """Carga strings del idioma especificado."""
+    lang_file = os.path.join(STRINGS_DIR, f"{lang_code}.json")
+    if os.path.exists(lang_file):
+        try:
+            with open(lang_file, 'r', encoding='utf-8') as f:
+                return json.load(f)
+        except Exception as e:
+            print(f"[AVISO] Error cargando idioma {lang_code}: {e}")
+    # Fallback basico
+    return {
+        "lang_name": lang_code.upper(),
+        "titulo": "Skyrim Glossary Editor",
+        "subtitulo": "Create and edit JSON terminology files",
+        "lang_label": "Language"
+    }
+
+AVAILABLE_LANGS = get_available_languages()
+DEFAULT_LANG = "es"
+S = load_language(DEFAULT_LANG)
+
 CATEGORIES = [
     "general", "lugar", "npc", "objeto", "arma", "armadura",
     "magia", "hechizo", "criatura", "faction", "quest", "raza",
@@ -385,91 +425,203 @@ def load_all_existing_jsons():
 # ============================================================
 
 def create_interface():
+    # --- NUEVO: Funcion para cambiar idioma dinamicamente ---
+    def on_lang_change(lang_code):
+        global S
+        S = load_language(lang_code)
+        # Retornar actualizaciones para todos los componentes de UI
+        # gr.Tab se actualiza con gr.update(label=...) igual que el servidor de traduccion
+        return (
+            # 0: Header HTML
+            gr.update(value=f'<div style="text-align:center; margin-bottom:5px;"><h1 style="margin:0; color:#d4a017;">{S.get("titulo")}</h1>'
+                f'<p style="margin:4px 0 0 0; color:#888; font-size:14px;">{S.get("subtitulo")}</p></div>'),
+            # 1: Filename input
+            gr.update(label=S.get("filename_label"), placeholder=S.get("filename_placeholder")),
+            # 2: Nuevo btn
+            gr.update(value=S.get("btn_nuevo")),
+            # 3: Guardar btn
+            # NOTA: load_btn (UploadButton) NO se incluye porque gr.update(value=texto)
+            #       lo trata como ruta de archivo y causa FileNotFoundError
+            gr.update(value=S.get("btn_guardar")),
+            # 4: Buscar jsons btn
+            gr.update(value=S.get("btn_buscar_jsons")),
+            # 5: Tab Buscar
+            gr.update(label=S.get("tab_buscar")),
+            # 6: Buscar descripcion markdown
+            gr.update(value=S.get("buscar_descripcion")),
+            # 7: Search input
+            gr.update(label=S.get("buscar_label"), placeholder=S.get("buscar_placeholder")),
+            # 8: Search btn
+            gr.update(value=S.get("btn_buscar")),
+            # 9: Ver todas btn
+            gr.update(value=S.get("btn_ver_todas")),
+            # 10: Search status label
+            gr.update(label=S.get("resultado_label")),
+            # 11: Search results Dataframe label
+            gr.update(label=S.get("tabla_label")),
+            # 12: Edit en
+            gr.update(label=S.get("edit_ingles"), placeholder=S.get("edit_placeholder")),
+            # 13: Edit es
+            gr.update(label=S.get("edit_espanol"), placeholder="..."),
+            # 14: Edit cat
+            gr.update(label=S.get("edit_categoria")),
+            # 15: Edit type
+            gr.update(label=S.get("edit_tipo")),
+            # 16: Edit source
+            gr.update(label=S.get("edit_fuente")),
+            # 17: Acciones titulo markdown
+            gr.update(value=f"### {S.get('acciones_titulo')}"),
+            # 18: Guardar cambios btn
+            gr.update(value=S.get("btn_guardar_cambios")),
+            # 19: Eliminar btn
+            gr.update(value=S.get("btn_eliminar")),
+            # 20: Subir btn
+            gr.update(value=S.get("btn_subir")),
+            # 21: Bajar btn
+            gr.update(value=S.get("btn_bajar")),
+            # 22: Tab Agregar
+            gr.update(label=S.get("tab_agregar")),
+            # 23: Agregar descripcion markdown
+            gr.update(value=S.get("agregar_descripcion")),
+            # 24: Agregar ingles titulo markdown
+            gr.update(value=f"### {S.get('agregar_ingles_titulo')}"),
+            # 25: En textarea placeholder
+            gr.update(placeholder=S.get("agregar_ingles_placeholder")),
+            # 26: Agregar espanol titulo markdown
+            gr.update(value=f"### {S.get('agregar_espanol_titulo')}"),
+            # 27: Es textarea placeholder
+            gr.update(placeholder=S.get("agregar_espanol_placeholder")),
+            # 28: Cat dropdown label
+            gr.update(label=S.get("agregar_categoria_label")),
+            # 29: Source input
+            gr.update(label=S.get("agregar_fuente_label"), placeholder=S.get("agregar_fuente_placeholder")),
+            # 30: Add lines btn
+            gr.update(value=S.get("btn_agregar_todas")),
+            # 31: Single titulo markdown
+            gr.update(value=f"### {S.get('agregar_single_titulo')}"),
+            # 32: Single en
+            gr.update(label=S.get("single_ingles"), placeholder=S.get("single_ingles_placeholder")),
+            # 33: Single es
+            gr.update(label=S.get("single_espanol"), placeholder=S.get("single_espanol_placeholder")),
+            # 34: Single cat
+            gr.update(label=S.get("edit_categoria")),
+            # 35: Single type
+            gr.update(label=S.get("edit_tipo")),
+            # 36: Single source
+            gr.update(label=S.get("edit_fuente"), placeholder=S.get("single_fuente_placeholder")),
+            # 37: Add single btn
+            gr.update(value=S.get("btn_agregar")),
+            # 38: Tab Vista
+            gr.update(label=S.get("tab_vista")),
+            # 39: Vista descripcion markdown
+            gr.update(value=S.get("vista_descripcion")),
+            # 40: Tab Archivos
+            gr.update(label=S.get("tab_archivos")),
+            # 41: Archivos descripcion markdown
+            gr.update(value=S.get("archivos_descripcion")),
+            # 42: Json list label
+            gr.update(label=S.get("archivos_label")),
+            # 43: Refresh jsons btn
+            gr.update(value=S.get("btn_actualizar_lista")),
+        )
+
     # Gradio 6.x: NO pasar theme ni css a Blocks(), van en launch()
     with gr.Blocks(title="Editor de Glosario Skyrim") as interface:
 
-        gr.HTML('<div style="text-align:center; margin-bottom:5px;"><h1 style="margin:0; color:#d4a017;">Editor de Glosario Skyrim</h1><p style="margin:4px 0 0 0; color:#888; font-size:14px;">Crea y edita archivos JSON con terminologia para el traductor</p></div>')
+        # --- NUEVO: Selector de idioma + Header ---
+        with gr.Row():
+            lang_dropdown = gr.Dropdown(
+                choices=[(name, code) for code, name in AVAILABLE_LANGS.items()],
+                value=DEFAULT_LANG,
+                label=S.get("lang_label"), scale=1, min_width=150, allow_custom_value=False
+            )
+            gr.Column(scale=5)  # spacer
+
+        header_html = gr.HTML(f'<div style="text-align:center; margin-bottom:5px;"><h1 style="margin:0; color:#d4a017;">{S.get("titulo")}</h1><p style="margin:4px 0 0 0; color:#888; font-size:14px;">{S.get("subtitulo")}</p></div>')
 
         with gr.Row():
-            filename_input = gr.Textbox(label="Nombre del archivo JSON", placeholder="ej: palabras_agregadas.json", value="", scale=3)
-            new_btn = gr.Button("Nuevo", variant="secondary", scale=1)
-            load_btn = gr.UploadButton("Cargar JSON", file_types=[".json"], variant="secondary", scale=1)
-            save_btn = gr.Button("Guardar JSON", variant="primary", scale=1)
-            scan_btn = gr.Button("Buscar JSONs en BD", variant="secondary", scale=1)
+            filename_input = gr.Textbox(label=S.get("filename_label"), placeholder=S.get("filename_placeholder"), value="", scale=3)
+            new_btn = gr.Button(S.get("btn_nuevo"), variant="secondary", scale=1)
+            load_btn = gr.UploadButton(S.get("btn_cargar"), file_types=[".json"], variant="secondary", scale=1)
+            save_btn = gr.Button(S.get("btn_guardar"), variant="primary", scale=1)
+            scan_btn = gr.Button(S.get("btn_buscar_jsons"), variant="secondary", scale=1)
 
-        status_text = gr.HTML(value="<p style='color:#888;'>Listo para crear o cargar un glosario</p>")
+        status_text = gr.HTML(value=f"<p style='color:#888;'>{S.get('status_listo')}</p>")
         stats_html = gr.HTML(value=render_stats(state.entries))
 
         with gr.Tabs(selected="tab_buscar") as tabs:
 
             # TAB 1: Buscar y Editar (pestaña principal por defecto)
-            with gr.Tab("Buscar y Editar", id="tab_buscar"):
-                gr.Markdown("**Busca y edita entradas existentes.** Haz clic en una fila para editarla.")
+            tab_buscar = gr.Tab(S.get("tab_buscar"), id="tab_buscar")
+            with tab_buscar:
+                buscar_desc_md = gr.Markdown(S.get("buscar_descripcion"))
                 with gr.Row():
-                    search_input = gr.Textbox(label="Buscar", placeholder="Buscar en ingles, espanol o categoria...", scale=4)
-                    search_btn = gr.Button("Buscar", variant="primary", scale=1)
-                    search_all_btn = gr.Button("Ver Todas", variant="secondary", scale=1)
+                    search_input = gr.Textbox(label=S.get("buscar_label"), placeholder=S.get("buscar_placeholder"), scale=4)
+                    search_btn = gr.Button(S.get("btn_buscar"), variant="primary", scale=1)
+                    search_all_btn = gr.Button(S.get("btn_ver_todas"), variant="secondary", scale=1)
 
-                search_status = gr.Textbox(label="Resultado", value="", interactive=False)
+                search_status = gr.Textbox(label=S.get("resultado_label"), value="", interactive=False)
                 search_results = gr.Dataframe(
-                    headers=["#", "Ingles", "Espanol", "Categoria", "Tipo", "Fuente"],
-                    label="Entradas encontradas (clic para editar)",
+                    headers=S.get("tabla_headers").split("|"),
+                    label=S.get("tabla_label"),
                     interactive=False, wrap=True
                 )
 
                 with gr.Row():
-                    # --- MODIFICADO: editar y controles en una sola fila para compactar ---
                     with gr.Column(scale=3):
                         edit_index_hidden = gr.Number(value=-1, visible=False, precision=0)
                         with gr.Row():
-                            edit_en = gr.Textbox(label="Ingles", placeholder="Selecciona una entrada de la tabla...", scale=1)
-                            edit_es = gr.Textbox(label="Espanol", placeholder="...", scale=1)
+                            edit_en = gr.Textbox(label=S.get("edit_ingles"), placeholder=S.get("edit_placeholder"), scale=1)
+                            edit_es = gr.Textbox(label=S.get("edit_espanol"), placeholder="...", scale=1)
                         with gr.Row():
-                            edit_cat = gr.Dropdown(choices=CATEGORIES, value=CATEGORIES[0], label="Categoria", scale=1)
-                            edit_type = gr.Dropdown(choices=TYPES, value=TYPES[0], label="Tipo", scale=1)
-                            edit_source = gr.Textbox(label="Fuente", value="manual", scale=1)
+                            edit_cat = gr.Dropdown(choices=CATEGORIES, value=CATEGORIES[0], label=S.get("edit_categoria"), scale=1)
+                            edit_type = gr.Dropdown(choices=TYPES, value=TYPES[0], label=S.get("edit_tipo"), scale=1)
+                            edit_source = gr.Textbox(label=S.get("edit_fuente"), value="manual", scale=1)
                     with gr.Column(scale=1, min_width=120):
-                        gr.Markdown("### Acciones")
-                        save_edit_btn = gr.Button("Guardar Cambios", variant="primary")
-                        delete_btn = gr.Button("Eliminar", variant="stop")
-                        move_up_btn = gr.Button("⬆ Subir", variant="secondary")
-                        move_down_btn = gr.Button("⬇ Bajar", variant="secondary")
+                        acciones_titulo_md = gr.Markdown(f"### {S.get('acciones_titulo')}")
+                        save_edit_btn = gr.Button(S.get("btn_guardar_cambios"), variant="primary")
+                        delete_btn = gr.Button(S.get("btn_eliminar"), variant="stop")
+                        move_up_btn = gr.Button(S.get("btn_subir"), variant="secondary")
+                        move_down_btn = gr.Button(S.get("btn_bajar"), variant="secondary")
 
             # TAB 2: Agregar Lineas
-            with gr.Tab("Agregar Lineas", id="tab_agregar"):
-                gr.Markdown("**Modo de uso:** Cada linea se convierte en una entrada. Las lineas se emparejan por numero (1 con 1, 2 con 2, etc).")
+            tab_agregar = gr.Tab(S.get("tab_agregar"), id="tab_agregar")
+            with tab_agregar:
+                agregar_desc_md = gr.Markdown(S.get("agregar_descripcion"))
                 with gr.Row():
                     with gr.Column(scale=1):
-                        gr.Markdown("### Texto Original (Ingles)")
-                        en_textarea = gr.Textbox(label="", placeholder="Pega aqui las lineas en ingles...\n\nCada linea = una entrada", lines=8)
+                        agregar_ing_titulo_md = gr.Markdown(f"### {S.get('agregar_ingles_titulo')}")
+                        en_textarea = gr.Textbox(label="", placeholder=S.get("agregar_ingles_placeholder"), lines=8)
                     with gr.Column(scale=1):
-                        gr.Markdown("### Texto Traducido (Espanol)")
-                        es_textarea = gr.Textbox(label="", placeholder="Pega aqui las traducciones...\n\nCada linea = una entrada", lines=8)
+                        agregar_esp_titulo_md = gr.Markdown(f"### {S.get('agregar_espanol_titulo')}")
+                        es_textarea = gr.Textbox(label="", placeholder=S.get("agregar_espanol_placeholder"), lines=8)
                 with gr.Row():
-                    cat_dropdown = gr.Dropdown(choices=CATEGORIES, value=CATEGORIES[0], label="Categoria", scale=1)
-                    source_input = gr.Textbox(label="Fuente (source)", value="manual", placeholder="ej: manual, mod_xxx", scale=1)
-                    add_lines_btn = gr.Button("Agregar todas las lineas", variant="primary", scale=1)
+                    cat_dropdown = gr.Dropdown(choices=CATEGORIES, value=CATEGORIES[0], label=S.get("agregar_categoria_label"), scale=1)
+                    source_input = gr.Textbox(label=S.get("agregar_fuente_label"), value="manual", placeholder=S.get("agregar_fuente_placeholder"), scale=1)
+                    add_lines_btn = gr.Button(S.get("btn_agregar_todas"), variant="primary", scale=1)
 
                 gr.Markdown("---")
-                gr.Markdown("### Agregar una sola entrada detallada")
+                single_titulo_md = gr.Markdown(f"### {S.get('agregar_single_titulo')}")
                 with gr.Row():
-                    single_en = gr.Textbox(label="Ingles", placeholder="Texto en ingles", scale=2)
-                    single_es = gr.Textbox(label="Espanol", placeholder="Traduccion al espanol", scale=2)
-                    single_cat = gr.Dropdown(choices=CATEGORIES, value=CATEGORIES[0], label="Categoria", scale=1)
-                    single_type = gr.Dropdown(choices=TYPES, value=TYPES[0], label="Tipo", scale=1)
-                    single_source = gr.Textbox(label="Fuente", value="manual", scale=1)
-                    add_single_btn = gr.Button("Agregar", variant="secondary", scale=1)
+                    single_en = gr.Textbox(label=S.get("single_ingles"), placeholder=S.get("single_ingles_placeholder"), scale=2)
+                    single_es = gr.Textbox(label=S.get("single_espanol"), placeholder=S.get("single_espanol_placeholder"), scale=2)
+                    single_cat = gr.Dropdown(choices=CATEGORIES, value=CATEGORIES[0], label=S.get("edit_categoria"), scale=1)
+                    single_type = gr.Dropdown(choices=TYPES, value=TYPES[0], label=S.get("edit_tipo"), scale=1)
+                    single_source = gr.Textbox(label=S.get("edit_fuente"), value="manual", scale=1)
+                    add_single_btn = gr.Button(S.get("btn_agregar"), variant="secondary", scale=1)
 
             # TAB 3: Vista Previa
-            with gr.Tab("Vista Previa", id="tab_vista"):
-                gr.Markdown("**Vista previa** con numeros de linea, como en ESP Translate.")
+            tab_vista = gr.Tab(S.get("tab_vista"), id="tab_vista")
+            with tab_vista:
+                vista_desc_md = gr.Markdown(S.get("vista_descripcion"))
                 preview_html = gr.HTML(value=render_line_preview(state.entries))
 
             # TAB 4: Archivos en BD
-            with gr.Tab("Archivos en BD", id="tab_archivos"):
-                gr.Markdown("**Archivos JSON en la carpeta BD** que el actualizador leeria para agregar terminos a ChromaDB.")
-                json_list = gr.Textbox(label="Archivos JSON en BD", value="", lines=10, interactive=False)
-                refresh_jsons_btn = gr.Button("Actualizar lista", variant="secondary")
+            tab_archivos = gr.Tab(S.get("tab_archivos"), id="tab_archivos")
+            with tab_archivos:
+                archivos_desc_md = gr.Markdown(S.get("archivos_descripcion"))
+                json_list = gr.Textbox(label=S.get("archivos_label"), value="", lines=10, interactive=False)
+                refresh_jsons_btn = gr.Button(S.get("btn_actualizar_lista"), variant="secondary")
 
         # CONECTAR EVENTOS
         new_btn.click(fn=new_glossary, inputs=[filename_input],
@@ -509,6 +661,57 @@ def create_interface():
 
         refresh_jsons_btn.click(fn=load_all_existing_jsons, inputs=[], outputs=[json_list])
 
+        # ======== EVENTO - Cambio de idioma ========
+        # --- NUEVO: Al cambiar idioma, actualizar toda la UI ---
+        # NOTA: load_btn (UploadButton) no se incluye, no soporta gr.update(value=texto)
+        lang_outputs = [
+            header_html,              # 0: HTML
+            filename_input,           # 1: Textbox
+            new_btn,                  # 2: Button
+            save_btn,                 # 3: Button
+            scan_btn,                 # 4: Button
+            tab_buscar,               # 5: Tab
+            buscar_desc_md,           # 6: Markdown
+            search_input,             # 7: Textbox
+            search_btn,               # 8: Button
+            search_all_btn,           # 9: Button
+            search_status,            # 10: Textbox
+            search_results,           # 11: Dataframe
+            edit_en,                  # 12: Textbox
+            edit_es,                  # 13: Textbox
+            edit_cat,                 # 14: Dropdown
+            edit_type,                # 15: Dropdown
+            edit_source,              # 16: Textbox
+            acciones_titulo_md,       # 17: Markdown
+            save_edit_btn,            # 18: Button
+            delete_btn,               # 19: Button
+            move_up_btn,              # 20: Button
+            move_down_btn,            # 21: Button
+            tab_agregar,              # 22: Tab
+            agregar_desc_md,          # 23: Markdown
+            agregar_ing_titulo_md,    # 24: Markdown
+            en_textarea,              # 25: Textbox
+            agregar_esp_titulo_md,    # 26: Markdown
+            es_textarea,              # 27: Textbox
+            cat_dropdown,             # 28: Dropdown
+            source_input,             # 29: Textbox
+            add_lines_btn,            # 30: Button
+            single_titulo_md,         # 31: Markdown
+            single_en,                # 32: Textbox
+            single_es,                # 33: Textbox
+            single_cat,               # 34: Dropdown
+            single_type,              # 35: Dropdown
+            single_source,            # 36: Textbox
+            add_single_btn,           # 37: Button
+            tab_vista,                # 38: Tab
+            vista_desc_md,            # 39: Markdown
+            tab_archivos,             # 40: Tab
+            archivos_desc_md,         # 41: Markdown
+            json_list,                # 42: Textbox
+            refresh_jsons_btn,        # 43: Button
+        ]
+        lang_dropdown.change(fn=on_lang_change, inputs=[lang_dropdown], outputs=lang_outputs)
+
     return interface
 
 
@@ -522,6 +725,8 @@ def main():
     print(f"Carpeta BD:    {BD_DIR}")
     print(f"Puerto web:    {GRADIO_PORT}")
     print(f"Gradio version: {gr.__version__}")
+    print(f"Strings dir:   {STRINGS_DIR}")
+    print(f"Idiomas:       {AVAILABLE_LANGS}")
 
     print(f"\nAbre en tu navegador: http://localhost:{GRADIO_PORT}")
     print("Para detener, cierra esta ventana o presiona Ctrl+C")
